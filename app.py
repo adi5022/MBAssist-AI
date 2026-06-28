@@ -61,7 +61,8 @@ def transcribe():
             return jsonify({"error": "Audio file is empty."}), 400
             
         from speech import transcribe_audio
-        text = transcribe_audio(file_bytes, audio_file.filename)
+        language = request.form.get("language", "en")
+        text = transcribe_audio(file_bytes, audio_file.filename, language=language)
         return jsonify({"text": text})
         
     except Exception as e:

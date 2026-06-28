@@ -305,11 +305,14 @@ document.addEventListener("DOMContentLoaded", () => {
         cleanupRecordingUI();
     };
 
+    const langSelect = document.getElementById("lang-select");
+
     const cleanupRecordingUI = () => {
         isRecording = false;
         micBtn.classList.remove("recording");
-        micBtn.style.display = ""; // Show microphone button again
-        sendButton.style.display = ""; // Show send button again
+        micBtn.style.display = "";
+        sendButton.style.display = "";
+        if (langSelect) langSelect.style.display = ""; // Show dropdown again
         if (recordingOverlay) recordingOverlay.style.display = "none";
         
         if (timerInterval) {
@@ -359,6 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Hide control buttons and show inline recording pill
             micBtn.style.display = "none";
             sendButton.style.display = "none";
+            if (langSelect) langSelect.style.display = "none"; // Hide dropdown
             if (recordingOverlay) recordingOverlay.style.display = "inline-flex";
 
             // Setup Web Audio API for visualizer & silence detection
@@ -451,6 +455,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     const formData = new FormData();
                     formData.append("audio", audioBlob, `audio.${extension}`);
+                    
+                    const selectedLang = langSelect ? langSelect.value : "en";
+                    formData.append("language", selectedLang);
 
                     const response = await fetch("/api/transcribe", {
                         method: "POST",
