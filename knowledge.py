@@ -4,6 +4,7 @@ import faiss
 import fitz  # PyMuPDF
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from config import PDF_PATH, CACHE_FILE, CHUNK_SIZE, CHUNK_STEP, TOP_K
 
@@ -39,7 +40,7 @@ def chunk_pages(pages: list[dict], size: int = CHUNK_SIZE,
     return chunks, meta
 
 class FAISSStore:
-    """Sentence Transformers -> Dense vectors -> FAISS IndexFlatIP (cosine similarity)."""
+    """Hybrid Search: Sentence Transformers (Dense) + TF-IDF (Sparse) with RRF merging."""
 
     def __init__(self, chunks: list[str] = None, meta: list[dict] = None,
                  cache: Path = CACHE_FILE, model_name: str = "all-MiniLM-L6-v2"):
@@ -51,60 +52,102 @@ class FAISSStore:
         self.model = SentenceTransformer(model_name)
         
         if cache.exists():
-            print("[INFO] Loading FAISS index from cache ...")
+            print("[INFO] Loading hybrid FAISS index from cache ...")
             with open(cache, "rb") as f:
                 data = pickle.load(f)
-            self.chunks     = data["chunks"]
-            self.meta       = data["meta"]
-            self.dim        = data["dim"]
-            vecs            = data["vectors"]
-            self.index      = faiss.IndexFlatIP(self.dim)
+            self.chunks           = data["chunks"]
+            self.meta             = data["meta"]
+            self.dim              = data["dim"]
+            self.tfidf_vectorizer = data["tfidf_vectorizer"]
+            self.tfidf_matrix     = data["tfidf_matrix"]
+            vecs                  = data["vectors"]
+            
+            self.index = faiss.IndexFlatIP(self.dim)
             self.index.add(vecs)
         else:
             if chunks is None or meta is None:
                 raise ValueError("Chunks and metadata must be provided to build FAISS store from scratch.")
             self._build(chunks, meta, cache)
-        print(f"[OK] FAISS ready — {self.index.ntotal:,} vectors, dim={self.dim}")
+        print(f"[OK] Hybrid FAISS ready — {self.index.ntotal:,} vectors, dim={self.dim}")
 
     def _build(self, chunks, meta, cache):
         print("[BUILD] Generating dense embeddings using SentenceTransformer ...")
-        self.chunks     = chunks
-        self.meta       = meta
+        self.chunks = chunks
+        self.meta   = meta
         
-        # Generate embeddings
+        # 1. Dense Embeddings
         embeddings = self.model.encode(chunks, show_progress_bar=True)
         embeddings = np.array(embeddings).astype(np.float32)
-        
-        # Normalize vectors for Cosine Similarity (using IndexFlatIP)
         faiss.normalize_L2(embeddings)
-        
         self.dim = embeddings.shape[1]
+        
         self.index = faiss.IndexFlatIP(self.dim)
         self.index.add(embeddings)
+        
+        # 2. Sparse TF-IDF fitting
+        print("[BUILD] Fitting TF-IDF vectorizer ...")
+        self.tfidf_vectorizer = TfidfVectorizer(
+            max_features=80_000, ngram_range=(1, 2), sublinear_tf=True
+        )
+        self.tfidf_matrix = self.tfidf_vectorizer.fit_transform(chunks)
 
-        # Ensure parent folder exists
+        # Cache it
         cache.parent.mkdir(parents=True, exist_ok=True)
         with open(cache, "wb") as f:
             pickle.dump({
-                "dim": self.dim, "chunks": self.chunks,
-                "meta": self.meta, "vectors": embeddings,
+                "dim": self.dim,
+                "chunks": self.chunks,
+                "meta": self.meta,
+                "vectors": embeddings,
+                "tfidf_vectorizer": self.tfidf_vectorizer,
+                "tfidf_matrix": self.tfidf_matrix,
             }, f)
-        print("[OK] Index built & cached")
-
-    def _embed(self, text: str) -> np.ndarray:
-        x = self.model.encode([text]).astype(np.float32)
-        faiss.normalize_L2(x)
-        return x
+        print("[OK] Hybrid Index built & cached")
 
     def search(self, query: str, k: int = TOP_K) -> list[dict]:
-        scores, idxs = self.index.search(self._embed(query), k)
+        candidate_pool_size = max(k * 3, 20)
+        
+        # ─── 1. Dense Search ───
+        query_dense = self.model.encode([query]).astype(np.float32)
+        faiss.normalize_L2(query_dense)
+        dense_scores, dense_idxs = self.index.search(query_dense, candidate_pool_size)
+        
+        dense_results = {}
+        for rank, idx in enumerate(dense_idxs[0]):
+            if idx != -1:
+                dense_results[idx] = rank + 1
+                
+        # ─── 2. Sparse Search ───
+        query_sparse = self.tfidf_vectorizer.transform([query])
+        sparse_similarities = self.tfidf_matrix.dot(query_sparse.T).toarray().ravel()
+        sparse_idxs = np.argsort(sparse_similarities)[::-1][:candidate_pool_size]
+        
+        sparse_results = {}
+        for rank, idx in enumerate(sparse_idxs):
+            if sparse_similarities[idx] > 0:
+                sparse_results[idx] = rank + 1
+
+        # ─── 3. Reciprocal Rank Fusion (RRF) Merge ───
+        all_candidates = set(dense_results.keys()).union(set(sparse_results.keys()))
+        rrf_scores = {}
+        
+        for idx in all_candidates:
+            score = 0.0
+            if idx in dense_results:
+                score += 1.0 / (60.0 + dense_results[idx])
+            if idx in sparse_results:
+                score += 1.0 / (60.0 + sparse_results[idx])
+            rrf_scores[idx] = score
+            
+        sorted_candidates = sorted(rrf_scores.items(), key=lambda item: item[1], reverse=True)[:k]
+        
         return [
             {
-                "text":   self.chunks[i],
-                "score":  float(scores[0][r]),
-                "page":   self.meta[i]["page"],
+                "text":  self.chunks[idx],
+                "score": float(rrf_scores[idx]),
+                "page":  self.meta[idx]["page"],
             }
-            for r, i in enumerate(idxs[0]) if i != -1
+            for idx, rrf_score in sorted_candidates
         ]
 
 # Global singleton or helper to get the initialized vector store
