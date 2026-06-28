@@ -396,7 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 strokes.forEach((stroke, idx) => {
                     const variance = 1 + Math.sin(idx + Date.now() / 80) * 0.25;
-                    const scale = Math.max(0.15, rms * 15 * variance);
+                    const scale = Math.max(0.15, rms * 28 * variance);
                     stroke.style.transform = `scaleY(${Math.min(2.5, scale)})`;
                 });
 
