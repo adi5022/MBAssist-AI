@@ -229,9 +229,80 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Alert placeholders
-    micBtn.addEventListener("click", () => {
-        alert("Dictation/Microphone input is currently a placeholder for Phase 2/3 (Whisper model integration).");
+    // Dictation Engine (Whisper Speech-to-Text Integration)
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    micBtn.addEventListener("click", async () => {
+        if (isRecording) {
+            isRecording = false;
+            micBtn.classList.remove("recording");
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunks = [];
+            
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach(track => track.stop());
+
+                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                
+                const originalPlaceholder = chatInput.placeholder;
+                chatInput.placeholder = "Transcribing audio input...";
+                chatInput.disabled = true;
+                micBtn.disabled = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append("audio", audioBlob, "audio.webm");
+
+                    const response = await fetch("/api/transcribe", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Transcription server error.");
+                    }
+
+                    const data = await response.json();
+                    if (data.text && data.text.trim()) {
+                        chatInput.value = data.text.trim();
+                        chatInput.dispatchEvent(new Event("input"));
+                    }
+                } catch (error) {
+                    console.error("Transcription error:", error);
+                    alert("Speech-to-Text failed. Please try again.");
+                } finally {
+                    chatInput.placeholder = originalPlaceholder;
+                    chatInput.disabled = false;
+                    micBtn.disabled = false;
+                    chatInput.focus();
+                }
+            };
+
+            isRecording = true;
+            micBtn.classList.add("recording");
+            mediaRecorder.start();
+
+        } catch (error) {
+            console.error("Microphone access error:", error);
+            alert("Could not access microphone. Please allow microphone permissions in your browser.");
+        }
     });
 
     attachBtn.addEventListener("click", () => {

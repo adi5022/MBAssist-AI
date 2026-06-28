@@ -45,6 +45,29 @@ def chat():
         print(f"[ERROR] Error in /api/chat: {str(e)}", file=sys.stderr)
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+@app.route("/api/transcribe", methods=["POST"])
+def transcribe():
+    """API endpoint to transcribe uploaded audio files using Groq Whisper API."""
+    try:
+        if "audio" not in request.files:
+            return jsonify({"error": "No audio file provided."}), 400
+            
+        audio_file = request.files["audio"]
+        if audio_file.filename == "":
+            return jsonify({"error": "Invalid audio file."}), 400
+            
+        file_bytes = audio_file.read()
+        if not file_bytes:
+            return jsonify({"error": "Audio file is empty."}), 400
+            
+        from speech import transcribe_audio
+        text = transcribe_audio(file_bytes, audio_file.filename)
+        return jsonify({"text": text})
+        
+    except Exception as e:
+        print(f"[ERROR] Error in /api/transcribe: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Transcription failed: {str(e)}"}), 500
+
 def check_files():
     """Verify at startup that data or cache dependencies are in place."""
     print("*" * 60)
