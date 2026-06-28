@@ -351,39 +351,37 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.focus();
 
     // ==========================================================================
-    // Fullscreen / Split-Screen View Toggle
+    // Fullscreen View Toggles (Subtle Icon / Double Click Header)
     // ==========================================================================
     const landingContainer = document.getElementById("landing-container");
-    const viewToggleBtn = document.getElementById("view-toggle-btn");
     const widgetFullscreenBtn = document.getElementById("widget-fullscreen-btn");
-    const chatbotWidget = document.getElementById("chatbot-widget");
     const dragStatus = document.getElementById("drag-status");
 
     const toggleFullscreen = () => {
         const isFullscreen = landingContainer.classList.toggle("fullscreen-active");
         
         if (isFullscreen) {
-            // Reset any active draggable positioning inline values
+            // Reset position coordinates and size before expanding
             chatbotWidget.style.position = "";
             chatbotWidget.style.left = "";
             chatbotWidget.style.top = "";
+            chatbotWidget.style.width = "";
+            chatbotWidget.style.height = "";
+            chatbotWidget.style.margin = "";
             chatbotWidget.classList.remove("draggable");
             dragStatus.textContent = "Fullscreen Mode";
-            viewToggleBtn.textContent = "Split Screen";
         } else {
-            dragStatus.textContent = "Repositionable Widget";
-            viewToggleBtn.textContent = "Full Screen Chat";
+            dragStatus.textContent = "Admissions Guide";
         }
         scrollToBottom();
     };
 
-    viewToggleBtn.addEventListener("click", toggleFullscreen);
     widgetFullscreenBtn.addEventListener("click", toggleFullscreen);
+    widgetHeader.addEventListener("dblclick", toggleFullscreen);
 
     // ==========================================================================
     // Draggable Widget Controller (Mouse & Touch)
     // ==========================================================================
-    const widgetHeader = document.getElementById("widget-header");
     let isDragging = false;
     let offsetX = 0;
     let offsetY = 0;

@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CSS Stylesheet -->
     <link rel="stylesheet" href="/static/style.css">
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
     <!-- Marked JS for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -29,7 +31,6 @@
         <!-- Top Navbar -->
         <header class="main-navbar" id="main-navbar">
             <div class="brand-group">
-                <span class="brand-logo">🎓</span>
                 <span class="brand-name">MBAssist <span class="accent-text">AI</span></span>
             </div>
             <nav class="nav-links">
@@ -37,9 +38,6 @@
                 <a href="https://mbcet.ac.in/academics/b-tech/" target="_blank" rel="noopener">B.Tech Programs</a>
                 <a href="https://mbcet.ac.in/contact/" target="_blank" rel="noopener">Contact Info</a>
             </nav>
-            <div class="nav-buttons">
-                <button class="btn-primary" id="view-toggle-btn">Full Screen Chat</button>
-            </div>
         </header>
 
         <!-- Main Landing Content (Split Grid) -->
@@ -139,18 +137,17 @@
                                     <span class="brand-bullet"></span>
                                     <div class="brand-desc">
                                         <span class="brand-title">MBAssist AI</span>
-                                        <span class="brand-status" id="drag-status">Repositionable Widget</span>
+                                        <span class="brand-status" id="drag-status">Admissions Guide</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="header-right">
-                                <!-- Widget Fullscreen Toggle -->
-                                <button class="action-icon-btn" id="widget-fullscreen-btn" title="Toggle Fullscreen Mode">
+                                <button class="action-icon-btn subtle-btn" id="widget-fullscreen-btn" title="Toggle Fullscreen Mode (or double-click header)">
                                     <svg viewBox="0 0 24 24" width="16" height="16">
                                         <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"/>
                                     </svg>
                                 </button>
-                                <button class="action-icon-btn" id="clear-all-btn" title="Clear Chat History">
+                                <button class="action-icon-btn subtle-btn" id="clear-all-btn" title="Clear Chat History">
                                     <svg viewBox="0 0 24 24" width="16" height="16">
                                         <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
                                     </svg>
