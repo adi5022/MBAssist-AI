@@ -3,10 +3,9 @@ import numpy as np
 import faiss
 import fitz  # PyMuPDF
 from pathlib import Path
-from sklearn.decomposition import TruncatedSVD
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 
-from config import PDF_PATH, CACHE_FILE, CHUNK_SIZE, CHUNK_STEP, EMBED_DIM, TOP_K
+from config import PDF_PATH, CACHE_FILE, CHUNK_SIZE, CHUNK_STEP, TOP_K
 
 def extract_pdf_text(path: Path) -> list[dict]:
     """Extract text from every page of the PDF using PyMuPDF.
@@ -40,63 +39,60 @@ def chunk_pages(pages: list[dict], size: int = CHUNK_SIZE,
     return chunks, meta
 
 class FAISSStore:
-    """TF-IDF + LSA -> L2-normalised dense vectors -> FAISS IndexFlatIP (cosine)."""
+    """Sentence Transformers -> Dense vectors -> FAISS IndexFlatIP (cosine similarity)."""
 
     def __init__(self, chunks: list[str] = None, meta: list[dict] = None,
-                 cache: Path = CACHE_FILE, dim: int = EMBED_DIM):
+                 cache: Path = CACHE_FILE, model_name: str = "all-MiniLM-L6-v2"):
         self.cache = cache
-        self.dim = dim
+        self.model_name = model_name
+        
+        # Load embedding model
+        print(f"[INFO] Initialising SentenceTransformer model: {model_name}...")
+        self.model = SentenceTransformer(model_name)
+        
         if cache.exists():
             print("[INFO] Loading FAISS index from cache ...")
             with open(cache, "rb") as f:
                 data = pickle.load(f)
-            self.vectorizer = data["vectorizer"]
-            self.svd        = data["svd"]
-            self.dim        = data["dim"]
             self.chunks     = data["chunks"]
             self.meta       = data["meta"]
+            self.dim        = data["dim"]
             vecs            = data["vectors"]
             self.index      = faiss.IndexFlatIP(self.dim)
             self.index.add(vecs)
         else:
             if chunks is None or meta is None:
                 raise ValueError("Chunks and metadata must be provided to build FAISS store from scratch.")
-            self._build(chunks, meta, cache, dim)
+            self._build(chunks, meta, cache)
         print(f"[OK] FAISS ready — {self.index.ntotal:,} vectors, dim={self.dim}")
 
-    def _build(self, chunks, meta, cache, dim):
-        print("[BUILD] Fitting TF-IDF ...")
+    def _build(self, chunks, meta, cache):
+        print("[BUILD] Generating dense embeddings using SentenceTransformer ...")
         self.chunks     = chunks
         self.meta       = meta
-        self.vectorizer = TfidfVectorizer(
-            max_features=80_000, ngram_range=(1, 2), sublinear_tf=True
-        )
-        X_sp = self.vectorizer.fit_transform(chunks)
-
-        real_dim    = min(dim, X_sp.shape[1] - 1, X_sp.shape[0] - 1)
-        self.dim    = real_dim
-        print(f"[BUILD] Fitting LSA (dim={real_dim}) ...")
-        self.svd    = TruncatedSVD(n_components=real_dim, random_state=42)
-        X_dense     = self.svd.fit_transform(X_sp).astype(np.float32)
-        faiss.normalize_L2(X_dense)
-
-        self.index  = faiss.IndexFlatIP(real_dim)
-        self.index.add(X_dense)
+        
+        # Generate embeddings
+        embeddings = self.model.encode(chunks, show_progress_bar=True)
+        embeddings = np.array(embeddings).astype(np.float32)
+        
+        # Normalize vectors for Cosine Similarity (using IndexFlatIP)
+        faiss.normalize_L2(embeddings)
+        
+        self.dim = embeddings.shape[1]
+        self.index = faiss.IndexFlatIP(self.dim)
+        self.index.add(embeddings)
 
         # Ensure parent folder exists
         cache.parent.mkdir(parents=True, exist_ok=True)
         with open(cache, "wb") as f:
             pickle.dump({
-                "vectorizer": self.vectorizer, "svd": self.svd,
                 "dim": self.dim, "chunks": self.chunks,
-                "meta": self.meta, "vectors": X_dense,
+                "meta": self.meta, "vectors": embeddings,
             }, f)
         print("[OK] Index built & cached")
 
     def _embed(self, text: str) -> np.ndarray:
-        x = self.svd.transform(
-            self.vectorizer.transform([text])
-        ).astype(np.float32)
+        x = self.model.encode([text]).astype(np.float32)
         faiss.normalize_L2(x)
         return x
 
