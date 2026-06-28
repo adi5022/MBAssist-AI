@@ -68,6 +68,26 @@ def transcribe():
         print(f"[ERROR] Error in /api/transcribe: {str(e)}", file=sys.stderr)
         return jsonify({"error": f"Transcription failed: {str(e)}"}), 500
 
+@app.route("/api/sarvam-usage", methods=["GET"])
+def sarvam_usage():
+    """Fetch remaining credits from Sarvam AI API usage endpoint."""
+    try:
+        import requests
+        sarvam_key = os.environ.get("SARVAM_AI")
+        if not sarvam_key:
+            return jsonify({"error": "Sarvam key not set"}), 404
+            
+        url = "https://api.sarvam.ai/usage"
+        headers = {"api-subscription-key": sarvam_key.strip()}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({"error": f"Sarvam API status {response.status_code}"}), response.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 def check_files():
     """Verify at startup that data or cache dependencies are in place."""
     print("*" * 60)

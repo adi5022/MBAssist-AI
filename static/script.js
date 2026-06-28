@@ -250,12 +250,44 @@ document.addEventListener("DOMContentLoaded", () => {
     const recordingTimer = document.getElementById("recording-timer");
     const cancelRecordBtn = document.getElementById("cancel-record-btn");
     const stopRecordBtn = document.getElementById("stop-record-btn");
+    
+    // Sarvam Credit references
+    const sarvamIndicator = document.getElementById("sarvam-indicator");
+    const sarvamCircleFg = document.getElementById("sarvam-circle-fg");
+    const sarvamCreditText = document.getElementById("sarvam-credit-text");
 
     const formatTimer = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+
+    const updateSarvamCredits = async () => {
+        if (!sarvamIndicator) return;
+        try {
+            const response = await fetch("/api/sarvam-usage");
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            
+            const remaining = parseFloat(data.credits_remaining ?? 0);
+            const total = parseFloat(data.total_credits ?? 1.0);
+            
+            // Format to 2 decimal places with currency symbol
+            sarvamCreditText.textContent = `₹${remaining.toFixed(2)}`;
+            sarvamIndicator.style.display = "inline-flex";
+
+            // Update circular progress bar
+            const percentage = Math.min(100, Math.max(0, (remaining / total) * 100));
+            const circumference = 2 * Math.PI * 8; // r = 8 -> 50.24
+            const offset = circumference - (percentage / 100) * circumference;
+            sarvamCircleFg.style.strokeDashoffset = offset;
+        } catch (error) {
+            sarvamIndicator.style.display = "none";
+        }
+    };
+
+    // Load initial Sarvam credits balance
+    updateSarvamCredits();
 
     const stopRecording = () => {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -276,6 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const cleanupRecordingUI = () => {
         isRecording = false;
         micBtn.classList.remove("recording");
+        micBtn.style.display = ""; // Show microphone button again
+        sendButton.style.display = ""; // Show send button again
         if (recordingOverlay) recordingOverlay.style.display = "none";
         
         if (timerInterval) {
@@ -321,8 +355,11 @@ document.addEventListener("DOMContentLoaded", () => {
             silenceStartTime = null;
             recordingDuration = 0;
             if (recordingTimer) recordingTimer.textContent = "0:00";
-            if (recordingOverlay) recordingOverlay.style.display = "flex";
-            micBtn.classList.add("recording");
+            
+            // Hide control buttons and show inline recording pill
+            micBtn.style.display = "none";
+            sendButton.style.display = "none";
+            if (recordingOverlay) recordingOverlay.style.display = "inline-flex";
 
             // Setup Web Audio API for visualizer & silence detection
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -430,6 +467,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         chatInput.value = data.text.trim();
                         chatInput.dispatchEvent(new Event("input"));
                     }
+                    
+                    // Update Sarvam credits balance after transcription finishes
+                    updateSarvamCredits();
                 } catch (error) {
                     console.error("Transcription error:", error);
                     alert(`Speech-to-Text failed: ${error.message}`);

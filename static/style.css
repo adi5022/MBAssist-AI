@@ -972,78 +972,67 @@ body {
     }
 }
 
-/* Recording Overlay UI */
+/* Recording Overlay UI (Compact Inline Pill) */
 .recording-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.96);
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    border-radius: 12px;
-    z-index: 10;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.05);
+    gap: 8px;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-right: 6px;
+    height: 32px;
 }
 
 .voice-wave {
     display: flex;
     align-items: center;
-    gap: 4px;
-    height: 24px;
-    width: 60px;
+    gap: 3px;
+    height: 16px;
+    width: 35px;
 }
 
 .voice-wave .stroke {
     display: block;
-    width: 3px;
+    width: 2.5px;
     height: 100%;
-    background: var(--accent-indigo);
-    border-radius: 4px;
-    transform: scaleY(0.15);
+    background: #ef4444;
+    border-radius: 3px;
+    transform: scaleY(0.2);
     transform-origin: center;
     transition: transform 0.08s ease;
 }
 
 .recording-timer {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 11.5px;
+    font-weight: 700;
     color: #ef4444;
     font-family: monospace;
-    flex-grow: 1;
-    margin-left: 12px;
-}
-
-.overlay-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    margin-right: 4px;
 }
 
 .overlay-btn {
     border: none;
     background: none;
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
+    padding: 0;
 }
 
 .overlay-btn.cancel-record {
-    color: #64748b;
-    background: rgba(100, 116, 139, 0.08);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
 }
 .overlay-btn.cancel-record:hover {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
+    color: white;
+    background: #ef4444;
 }
 
 .overlay-btn.stop-record {
@@ -1053,4 +1042,41 @@ body {
 .overlay-btn.stop-record:hover {
     background: #dc2626;
     transform: scale(1.05);
+}
+
+/* Sarvam Credits Indicator */
+.sarvam-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--accent-indigo);
+    margin-right: 6px;
+    height: 32px;
+}
+
+.sarvam-circle-svg {
+    transform: rotate(-90deg);
+}
+
+.sarvam-circle-svg circle {
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.sarvam-circle-svg circle.bg {
+    stroke: rgba(99, 102, 241, 0.15);
+}
+
+.sarvam-circle-svg circle.fg {
+    stroke: var(--accent-indigo);
+    stroke-linecap: round;
+    stroke-dasharray: 50.24; /* 2 * PI * r = 2 * 3.14 * 8 = 50.24 */
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.3s ease;
 }
