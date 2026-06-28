@@ -251,16 +251,30 @@ document.addEventListener("DOMContentLoaded", () => {
             mediaRecorder = new MediaRecorder(stream);
             
             mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
+                if (event.data && event.data.size > 0) {
                     audioChunks.push(event.data);
                 }
             };
 
             mediaRecorder.onstop = async () => {
+                // Determine native mimetype and file extension
+                const mimeType = audioChunks[0]?.type || "audio/webm";
+                let extension = "webm";
+                if (mimeType.includes("mp4")) extension = "mp4";
+                else if (mimeType.includes("ogg")) extension = "ogg";
+                else if (mimeType.includes("wav")) extension = "wav";
+                
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                
+                // Stop microphone tracks
                 stream.getTracks().forEach(track => track.stop());
 
-                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-                
+                if (audioBlob.size === 0) {
+                    console.error("Recording resulted in an empty audio blob.");
+                    alert("Audio recording was empty. Please check your microphone settings.");
+                    return;
+                }
+
                 const originalPlaceholder = chatInput.placeholder;
                 chatInput.placeholder = "Transcribing audio input...";
                 chatInput.disabled = true;
@@ -268,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 try {
                     const formData = new FormData();
-                    formData.append("audio", audioBlob, "audio.webm");
+                    formData.append("audio", audioBlob, `audio.${extension}`);
 
                     const response = await fetch("/api/transcribe", {
                         method: "POST",
@@ -276,7 +290,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
 
                     if (!response.ok) {
-                        throw new Error("Transcription server error.");
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.error || "Transcription server error.");
                     }
 
                     const data = await response.json();
@@ -286,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 } catch (error) {
                     console.error("Transcription error:", error);
-                    alert("Speech-to-Text failed. Please try again.");
+                    alert(`Speech-to-Text failed: ${error.message}`);
                 } finally {
                     chatInput.placeholder = originalPlaceholder;
                     chatInput.disabled = false;
@@ -297,7 +312,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             isRecording = true;
             micBtn.classList.add("recording");
-            mediaRecorder.start();
+            // Start recording and emit data chunks every 250ms
+            mediaRecorder.start(250);
 
         } catch (error) {
             console.error("Microphone access error:", error);
