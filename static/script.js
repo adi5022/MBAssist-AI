@@ -306,13 +306,54 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const langSelect = document.getElementById("lang-select");
+    const customLangSelector = document.getElementById("custom-lang-selector");
+    const langTriggerBtn = document.getElementById("lang-trigger-btn");
+    const langOptionsDropdown = document.getElementById("lang-options-dropdown");
+    const selectedLangLabel = document.getElementById("selected-lang-label");
+
+    // Custom Language dropdown toggle
+    if (langTriggerBtn && langOptionsDropdown) {
+        langTriggerBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = customLangSelector.classList.toggle("open");
+            langOptionsDropdown.style.display = isOpen ? "flex" : "none";
+        });
+        
+        document.querySelectorAll(".lang-option").forEach(option => {
+            option.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const val = option.getAttribute("data-value");
+                
+                if (langSelect) langSelect.value = val;
+                
+                if (selectedLangLabel) {
+                    if (val === "en") selectedLangLabel.textContent = "EN";
+                    else if (val === "ml-mix") selectedLangLabel.textContent = "ML Mix";
+                    else if (val === "ml") selectedLangLabel.textContent = "ML Pure";
+                }
+                
+                document.querySelectorAll(".lang-option").forEach(opt => opt.classList.remove("active"));
+                option.classList.add("active");
+                
+                customLangSelector.classList.remove("open");
+                langOptionsDropdown.style.display = "none";
+            });
+        });
+        
+        document.addEventListener("click", (e) => {
+            if (customLangSelector && !customLangSelector.contains(e.target)) {
+                customLangSelector.classList.remove("open");
+                langOptionsDropdown.style.display = "none";
+            }
+        });
+    }
 
     const cleanupRecordingUI = () => {
         isRecording = false;
         micBtn.classList.remove("recording");
         micBtn.style.display = "";
         sendButton.style.display = "";
-        if (langSelect) langSelect.style.display = ""; // Show dropdown again
+        if (customLangSelector) customLangSelector.style.display = ""; // Show dropdown again
         if (recordingOverlay) recordingOverlay.style.display = "none";
         
         if (timerInterval) {
@@ -362,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Hide control buttons and show inline recording pill
             micBtn.style.display = "none";
             sendButton.style.display = "none";
-            if (langSelect) langSelect.style.display = "none"; // Hide dropdown
+            if (customLangSelector) customLangSelector.style.display = "none"; // Hide dropdown
             if (recordingOverlay) recordingOverlay.style.display = "inline-flex";
 
             // Setup Web Audio API for visualizer & silence detection

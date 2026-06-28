@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CSS Stylesheet -->
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2.1">
     <!-- Favicon -->
     <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
     <!-- Marked JS for Markdown parsing -->
@@ -231,12 +231,22 @@
                                         </button>
                                     </div>
 
-                                    <!-- Language Selector Dropdown -->
-                                    <select id="lang-select" class="lang-dropdown" title="Select Voice Input Language">
-                                        <option value="en" selected>EN</option>
-                                        <option value="ml-mix">ML (Mix)</option>
-                                        <option value="ml">ML (Pure)</option>
-                                    </select>
+                                    <!-- Custom Language Selector Dropdown -->
+                                    <div class="custom-lang-selector" id="custom-lang-selector">
+                                        <button type="button" class="lang-trigger-btn" id="lang-trigger-btn" title="Select Voice Input Language">
+                                            <span id="selected-lang-label">EN</span>
+                                            <svg viewBox="0 0 24 24" width="10" height="10">
+                                                <path d="M7 10l5 5 5-5z" fill="currentColor"/>
+                                            </svg>
+                                        </button>
+                                        <div class="lang-options-dropdown" id="lang-options-dropdown" style="display: none;">
+                                            <div class="lang-option active" data-value="en">English (EN)</div>
+                                            <div class="lang-option" data-value="ml-mix">Malayalam Mix (ML-Mix)</div>
+                                            <div class="lang-option" data-value="ml">Malayalam Pure (ML)</div>
+                                        </div>
+                                        <!-- Hidden input to store value -->
+                                        <input type="hidden" id="lang-select" value="en">
+                                    </div>
 
                                     <button type="button" class="panel-btn" id="mic-btn" title="Voice Input">
                                         <svg viewBox="0 0 24 24" width="18" height="18">
@@ -269,6 +279,6 @@
     </div>
 
     <!-- Client Script -->
-    <script src="/static/script.js"></script>
+    <script src="/static/script.js?v=2.1"></script>
 </body>
 </html>
