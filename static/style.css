@@ -1034,7 +1034,6 @@ body {
     border-radius: 3px;
     transform: scaleY(0.2);
     transform-origin: center;
-    transition: transform 0.08s ease;
 }
 
 .recording-timer {
