@@ -151,10 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         renderHistoryList();
         
-        // Hide sidebar on click in mobile
-        if (window.innerWidth <= 900) {
-            sidebar.classList.remove("open");
-        }
+        // Hide sidebar drawer after loading the conversation
+        sidebar.classList.remove("open");
     };
 
     // Delete a specific session
@@ -351,4 +349,91 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initial setups
     renderHistoryList();
     chatInput.focus();
+
+    // ==========================================================================
+    // Fullscreen / Split-Screen View Toggle
+    // ==========================================================================
+    const landingContainer = document.getElementById("landing-container");
+    const viewToggleBtn = document.getElementById("view-toggle-btn");
+    const widgetFullscreenBtn = document.getElementById("widget-fullscreen-btn");
+    const chatbotWidget = document.getElementById("chatbot-widget");
+    const dragStatus = document.getElementById("drag-status");
+
+    const toggleFullscreen = () => {
+        const isFullscreen = landingContainer.classList.toggle("fullscreen-active");
+        
+        if (isFullscreen) {
+            // Reset any active draggable positioning inline values
+            chatbotWidget.style.position = "";
+            chatbotWidget.style.left = "";
+            chatbotWidget.style.top = "";
+            chatbotWidget.classList.remove("draggable");
+            dragStatus.textContent = "Fullscreen Mode";
+            viewToggleBtn.textContent = "Split Screen";
+        } else {
+            dragStatus.textContent = "Repositionable Widget";
+            viewToggleBtn.textContent = "Full Screen Chat";
+        }
+        scrollToBottom();
+    };
+
+    viewToggleBtn.addEventListener("click", toggleFullscreen);
+    widgetFullscreenBtn.addEventListener("click", toggleFullscreen);
+
+    // ==========================================================================
+    // Draggable Widget Controller (Mouse & Touch)
+    // ==========================================================================
+    const widgetHeader = document.getElementById("widget-header");
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const dragStart = (e) => {
+        // Disabled when in full screen
+        if (landingContainer.classList.contains("fullscreen-active")) return;
+        
+        // Exclude interactive elements (toggles, buttons) from drag triggers
+        if (e.target.closest("button") || e.target.closest("a") || e.target.closest("svg")) return;
+
+        const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+        isDragging = true;
+        chatbotWidget.classList.add("draggable");
+
+        const rect = chatbotWidget.getBoundingClientRect();
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+    };
+
+    const dragMove = (e) => {
+        if (!isDragging) return;
+        
+        // Prevent background scrolling while dragging on touch devices
+        e.preventDefault();
+
+        const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+        const leftPos = clientX - offsetX;
+        const topPos = clientY - offsetY;
+
+        chatbotWidget.style.left = `${leftPos}px`;
+        chatbotWidget.style.top = `${topPos}px`;
+        chatbotWidget.style.margin = "0";
+    };
+
+    const dragEnd = () => {
+        isDragging = false;
+    };
+
+    // Mouse Drag Listeners
+    widgetHeader.addEventListener("mousedown", dragStart);
+    document.addEventListener("mousemove", dragMove);
+    document.addEventListener("mouseup", dragEnd);
+
+    // Touch Drag Listeners (Mobile/Tablet)
+    widgetHeader.addEventListener("touchstart", dragStart);
+    document.addEventListener("touchmove", dragMove, { passive: false });
+    document.addEventListener("touchend", dragEnd);
 });

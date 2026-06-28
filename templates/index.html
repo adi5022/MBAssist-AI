@@ -3,153 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MBCET Admissions Assistant</title>
-    <meta name="description" content="Intelligent multilingual Admissions Assistant for Mar Baselios College of Engineering and Technology.">
+    <title>MBAssist AI — Mar Baselios Admissions Inquiry Chatbot</title>
+    <meta name="description" content="Meet MBAssist AI, your intelligent RAG assistant that answers questions accurately using the MBCET Admissions Prospectus.">
     <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CSS Stylesheet -->
     <link rel="stylesheet" href="/static/style.css">
     <!-- Marked JS for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div class="dashboard-layout">
-        <!-- Floating Left History Panel -->
-        <aside class="floating-sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="app-brand">
-                    <span class="brand-logo">🎓</span>
-                    <div class="brand-text">
-                        <h3>MBCET</h3>
-                        <span>Admissions Portal</span>
-                    </div>
-                </div>
-                <button class="new-chat-btn" id="new-chat-btn" title="Start a New Chat">
-                    <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-                    </svg>
-                    <span>New Chat</span>
-                </button>
-            </div>
-            
-            <div class="history-container">
-                <div class="history-header">
-                    <span>Recent Discussions</span>
-                </div>
-                <div class="history-list" id="history-list">
-                    <!-- Dynamic chat logs rendered here -->
-                </div>
-            </div>
-
-            <div class="sidebar-footer">
-                <div class="user-badge">
-                    <div class="user-avatar">A</div>
-                    <div class="user-details">
-                        <span class="user-title">Admissions Guest</span>
-                        <span class="user-subtitle">Local Session</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Floating Main Chat Panel -->
-        <main class="main-chat-panel">
-            <!-- Header bar inside the chat panel -->
-            <header class="chat-header">
-                <button class="menu-toggle-btn" id="menu-toggle-btn" aria-label="Toggle Recent Panel">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"/>
-                    </svg>
-                </button>
-                
-                <div class="model-status">
-                    <span class="status-indicator"></span>
-                    <span class="status-text">MBCET Admissions RAG Engine v2</span>
-                </div>
-
-                <div class="header-actions">
-                    <button class="action-icon-btn" id="clear-all-btn" title="Clear All History">
-                        <svg viewBox="0 0 24 24" width="18" height="18">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
-                        </svg>
-                    </button>
-                </div>
-            </header>
-
-            <!-- Chat Viewport -->
-            <div class="chat-container">
-                <div class="chat-viewport" id="chat-viewport">
-                    
-                    <!-- Welcome / Inactive State -->
-                    <div class="welcome-screen" id="welcome-screen">
-                        <div class="college-crest">🎓</div>
-                        <h2 class="welcome-title">Welcome to Mar Baselios College of Engineering & Technology</h2>
-                        <p class="welcome-subtitle">Ask questions in Malayalam, English, Hindi, or Tamil about courses, fees, eligibility, or hostels.</p>
-                        
-                        <div class="suggestions-container">
-                            <div class="suggestion-card" data-query="What B.Tech branches are available at MBCET?">
-                                <h4>B.Tech Branches</h4>
-                                <p>View branches, seats, and course lists</p>
-                            </div>
-                            <div class="suggestion-card" data-query="What is the admission fee and eligibility criteria?">
-                                <h4>Eligibility & Fees</h4>
-                                <p>Tuition costs and qualification rules</p>
-                            </div>
-                            <div class="suggestion-card" data-query="What are the hostel and campus facilities like?">
-                                <h4>Hostels & Life</h4>
-                                <p>Details on hostel rooms and amenities</p>
-                            </div>
-                            <div class="suggestion-card" data-query="How can I apply for the management quota seats?">
-                                <h4>Application Steps</h4>
-                                <p>Procedure for merit & quota admissions</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Active Conversation Messages -->
-                    <div class="chat-messages" id="chat-messages" style="display: none;">
-                        <!-- Dynamic conversation entries loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input Bar -->
-            <footer class="chat-input-footer">
-                <div class="input-bar-container">
-                    <form class="input-bar" id="chat-form" onsubmit="event.preventDefault();">
-                        <button type="button" class="bar-btn" id="attach-btn" title="Attach Document">
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-3.31 2.69-6 6-6s6 2.69 6 6v10c0 4.42-3.58 8-8 8s-8-3.58-8-8V6h2v9c0 3.31 2.69 6 6 6s6-2.69 6-6V5c0-2.21-1.79-4-4-4s-4 1.79-4 4v12.5c0 1.1.9 2 2 2s2-.9 2-2V6h2z" fill="currentColor"/>
-                            </svg>
-                        </button>
-                        
-                        <textarea id="chat-input" placeholder="Ask about MBCET admissions..." rows="1" required></textarea>
-                        
-                        <div class="bar-actions-right">
-                            <button type="button" class="bar-btn" id="mic-btn" title="Voice Input (Dictation)">
-                                <svg viewBox="0 0 24 24" width="18" height="18">
-                                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" fill="currentColor"/>
-                                </svg>
-                            </button>
-                            
-                            <button type="submit" id="send-button" title="Submit Message">
-                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="disclaimer-text">
-                    This assistant responds based on the MBCET Admissions Prospectus. Check official college details for confirmations.
-                </div>
-            </footer>
-        </main>
+    <!-- Glowing Background Tech Nodes -->
+    <div class="network-bg">
+        <div class="glowing-node node-1"></div>
+        <div class="glowing-node node-2"></div>
+        <div class="glowing-node node-3"></div>
+        <div class="glowing-node node-4"></div>
+        <div class="glowing-line line-1"></div>
+        <div class="glowing-line line-2"></div>
     </div>
 
-    <!-- Script -->
+    <div class="landing-container" id="landing-container">
+        <!-- Top Navbar -->
+        <header class="main-navbar" id="main-navbar">
+            <div class="brand-group">
+                <span class="brand-logo">🎓</span>
+                <span class="brand-name">MBAssist <span class="accent-text">AI</span></span>
+            </div>
+            <nav class="nav-links">
+                <a href="https://mbcet.ac.in/admissions/" target="_blank" rel="noopener">MBCET Admissions</a>
+                <a href="https://mbcet.ac.in/academics/b-tech/" target="_blank" rel="noopener">B.Tech Programs</a>
+                <a href="https://mbcet.ac.in/contact/" target="_blank" rel="noopener">Contact Info</a>
+            </nav>
+            <div class="nav-buttons">
+                <button class="btn-primary" id="view-toggle-btn">Full Screen Chat</button>
+            </div>
+        </header>
+
+        <!-- Main Landing Content (Split Grid) -->
+        <div class="split-grid" id="split-grid">
+            <!-- Left Side: Copy and Diagram -->
+            <section class="copy-section" id="copy-section">
+                <div class="badge">MBAssist AI Platform</div>
+                <h1 class="main-headline">UNLOCK YOUR COLLEGE KNOWLEDGE <span class="blue-text">INSTANTLY</span></h1>
+                <p class="tagline">Mar Baselios Admissions Enquiry Chatbot</p>
+                <p class="description">
+                    Meet MBAssist AI, your intelligent RAG assistant that answers questions accurately using the MBCET Admissions Prospectus, guidelines, and facilities.
+                </p>
+
+                <!-- Horizontal Flow Diagram -->
+                <div class="flow-diagram">
+                    <div class="diagram-node">
+                        <div class="node-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="node-label">Documents/Data</span>
+                    </div>
+                    <div class="flow-arrow">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M16.01 11H4v2h12.01v3L20 12l-3.99-4z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="diagram-node">
+                        <div class="node-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="node-label">Knowledge Base</span>
+                    </div>
+                    <div class="flow-arrow">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M16.01 11H4v2h12.01v3L20 12l-3.99-4z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="diagram-node">
+                        <div class="node-icon brain-node">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <path d="M12 2c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l2.79-2.79C10.09 18.64 11.02 19 12 19c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="node-label">MBAssist AI</span>
+                    </div>
+                    <div class="flow-arrow">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M16.01 11H4v2h12.01v3L20 12l-3.99-4z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="diagram-node">
+                        <div class="node-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm0 4h12v2H6v-2zm0-8h12v2H6V5z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="node-label">Precise Answer</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Embedded Chatbot Widget Container -->
+            <section class="widget-section" id="widget-section">
+                <!-- Draggable Header Note -->
+                <div class="chatbot-widget" id="chatbot-widget">
+                    
+                    <!-- Slide-out Sidebar Drawer Inside Widget -->
+                    <aside class="widget-sidebar" id="sidebar">
+                        <div class="sidebar-header-widget">
+                            <span>Recent Chats</span>
+                            <button class="new-chat-btn" id="new-chat-btn" title="New Chat">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="history-list" id="history-list">
+                            <!-- Dynamic chat list sessions -->
+                        </div>
+                    </aside>
+
+                    <!-- Chat Widget Main Content Panel -->
+                    <div class="widget-main">
+                        <!-- Widget Header (Drag Handle) -->
+                        <header class="widget-header" id="widget-header" title="Drag to reposition widget">
+                            <div class="header-left">
+                                <button class="menu-toggle-btn" id="menu-toggle-btn" title="Toggle Recent Chats">
+                                    <svg viewBox="0 0 24 24" width="18" height="18">
+                                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <div class="widget-brand">
+                                    <span class="brand-bullet"></span>
+                                    <div class="brand-desc">
+                                        <span class="brand-title">MBAssist AI</span>
+                                        <span class="brand-status" id="drag-status">Repositionable Widget</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="header-right">
+                                <!-- Widget Fullscreen Toggle -->
+                                <button class="action-icon-btn" id="widget-fullscreen-btn" title="Toggle Fullscreen Mode">
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <button class="action-icon-btn" id="clear-all-btn" title="Clear Chat History">
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </header>
+
+                        <!-- Chat Viewport -->
+                        <div class="chat-container">
+                            <div class="chat-viewport" id="chat-viewport">
+                                
+                                <!-- Welcome / Inactive State -->
+                                <div class="welcome-screen" id="welcome-screen">
+                                    <div class="welcome-icon">💬</div>
+                                    <h3 class="welcome-title">Hello! I'm MBAssist AI</h3>
+                                    <p class="welcome-subtitle">I'm connected to the MBCET Admissions prospectus. How can I help you find information today?</p>
+                                    
+                                    <div class="suggestions-container">
+                                        <div class="suggestion-card" data-query="What B.Tech branches are available at MBCET?">
+                                            <span>B.Tech Specialities</span>
+                                        </div>
+                                        <div class="suggestion-card" data-query="What is the admission fee and eligibility criteria?">
+                                            <span>Eligibility & Fees</span>
+                                        </div>
+                                        <div class="suggestion-card" data-query="What are the hostel and campus facilities like?">
+                                            <span>Hostel & Facilities</span>
+                                        </div>
+                                        <div class="suggestion-card" data-query="How can I apply for the management quota seats?">
+                                            <span>Apply Quota</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Active Messages Area -->
+                                <div class="chat-messages" id="chat-messages" style="display: none;">
+                                    <!-- Dynamic chat bubbles go here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Footer / Input area -->
+                        <footer class="widget-footer">
+                            <form class="input-panel" id="chat-form" onsubmit="event.preventDefault();">
+                                <button type="button" class="panel-btn" id="attach-btn" title="Attach Document">
+                                    <svg viewBox="0 0 24 24" width="18" height="18">
+                                        <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-3.31 2.69-6 6-6s6 2.69 6 6v10c0 4.42-3.58 8-8 8s-8-3.58-8-8V6h2v9c0 3.31 2.69 6 6 6s6-2.69 6-6V5c0-2.21-1.79-4-4-4s-4 1.79-4 4v12.5c0 1.1.9 2 2 2s2-.9 2-2V6h2z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                
+                                <textarea id="chat-input" placeholder="Type your question..." rows="1" required></textarea>
+                                
+                                <div class="input-actions">
+                                    <button type="button" class="panel-btn" id="mic-btn" title="Voice Input">
+                                        <svg viewBox="0 0 24 24" width="18" height="18">
+                                            <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    
+                                    <button type="submit" id="send-button" title="Send message">
+                                        <svg viewBox="0 0 24 24" width="14" height="14">
+                                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </form>
+                        </footer>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer" id="main-footer">
+            <p>&copy; 2026 MBAssist AI. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="https://mbcet.ac.in/admissions/" target="_blank" rel="noopener">Admissions</a>
+                <a href="https://mbcet.ac.in/academics/b-tech/" target="_blank" rel="noopener">Academics</a>
+                <a href="https://mbcet.ac.in/contact/" target="_blank" rel="noopener">Contact</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Client Script -->
     <script src="/static/script.js"></script>
 </body>
 </html>
