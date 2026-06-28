@@ -1,0 +1,29 @@
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Environment variables / API Keys
+.env
+.env.*
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local Project Data & Cache
+data/
+cache/
+*.pkl
+*.pdf
+
+# Editor / OS configs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

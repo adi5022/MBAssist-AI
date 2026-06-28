@@ -1,0 +1,11 @@
+flask
+groq
+faiss-cpu
+pymupdf
+langgraph
+pydantic>=2.0
+scikit-learn
+langdetect
+requests
+python-dotenv
+markdown

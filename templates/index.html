@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBCET Admissions Assistant</title>
+    <meta name="description" content="Intelligent multilingual Admissions Assistant for Mar Baselios College of Engineering and Technology.">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Marked JS for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Floating Left History Panel -->
+        <aside class="floating-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="app-brand">
+                    <span class="brand-logo">🎓</span>
+                    <div class="brand-text">
+                        <h3>MBCET</h3>
+                        <span>Admissions Portal</span>
+                    </div>
+                </div>
+                <button class="new-chat-btn" id="new-chat-btn" title="Start a New Chat">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+            </div>
+            
+            <div class="history-container">
+                <div class="history-header">
+                    <span>Recent Discussions</span>
+                </div>
+                <div class="history-list" id="history-list">
+                    <!-- Dynamic chat logs rendered here -->
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-badge">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <span class="user-title">Admissions Guest</span>
+                        <span class="user-subtitle">Local Session</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Floating Main Chat Panel -->
+        <main class="main-chat-panel">
+            <!-- Header bar inside the chat panel -->
+            <header class="chat-header">
+                <button class="menu-toggle-btn" id="menu-toggle-btn" aria-label="Toggle Recent Panel">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor"/>
+                    </svg>
+                </button>
+                
+                <div class="model-status">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">MBCET Admissions RAG Engine v2</span>
+                </div>
+
+                <div class="header-actions">
+                    <button class="action-icon-btn" id="clear-all-btn" title="Clear All History">
+                        <svg viewBox="0 0 24 24" width="18" height="18">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Viewport -->
+            <div class="chat-container">
+                <div class="chat-viewport" id="chat-viewport">
+                    
+                    <!-- Welcome / Inactive State -->
+                    <div class="welcome-screen" id="welcome-screen">
+                        <div class="college-crest">🎓</div>
+                        <h2 class="welcome-title">Welcome to Mar Baselios College of Engineering & Technology</h2>
+                        <p class="welcome-subtitle">Ask questions in Malayalam, English, Hindi, or Tamil about courses, fees, eligibility, or hostels.</p>
+                        
+                        <div class="suggestions-container">
+                            <div class="suggestion-card" data-query="What B.Tech branches are available at MBCET?">
+                                <h4>B.Tech Branches</h4>
+                                <p>View branches, seats, and course lists</p>
+                            </div>
+                            <div class="suggestion-card" data-query="What is the admission fee and eligibility criteria?">
+                                <h4>Eligibility & Fees</h4>
+                                <p>Tuition costs and qualification rules</p>
+                            </div>
+                            <div class="suggestion-card" data-query="What are the hostel and campus facilities like?">
+                                <h4>Hostels & Life</h4>
+                                <p>Details on hostel rooms and amenities</p>
+                            </div>
+                            <div class="suggestion-card" data-query="How can I apply for the management quota seats?">
+                                <h4>Application Steps</h4>
+                                <p>Procedure for merit & quota admissions</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Conversation Messages -->
+                    <div class="chat-messages" id="chat-messages" style="display: none;">
+                        <!-- Dynamic conversation entries loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <footer class="chat-input-footer">
+                <div class="input-bar-container">
+                    <form class="input-bar" id="chat-form" onsubmit="event.preventDefault();">
+                        <button type="button" class="bar-btn" id="attach-btn" title="Attach Document">
+                            <svg viewBox="0 0 24 24" width="18" height="18">
+                                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-3.31 2.69-6 6-6s6 2.69 6 6v10c0 4.42-3.58 8-8 8s-8-3.58-8-8V6h2v9c0 3.31 2.69 6 6 6s6-2.69 6-6V5c0-2.21-1.79-4-4-4s-4 1.79-4 4v12.5c0 1.1.9 2 2 2s2-.9 2-2V6h2z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                        
+                        <textarea id="chat-input" placeholder="Ask about MBCET admissions..." rows="1" required></textarea>
+                        
+                        <div class="bar-actions-right">
+                            <button type="button" class="bar-btn" id="mic-btn" title="Voice Input (Dictation)">
+                                <svg viewBox="0 0 24 24" width="18" height="18">
+                                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            
+                            <button type="submit" id="send-button" title="Submit Message">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="disclaimer-text">
+                    This assistant responds based on the MBCET Admissions Prospectus. Check official college details for confirmations.
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Script -->
+    <script src="/static/script.js"></script>
+</body>
+</html>
