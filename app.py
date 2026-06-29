@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify, render_template
 
 from config import PDF_PATH, CACHE_FILE, DATA_DIR
 from rag import ask_chatbot
+import random
+import time
 from database import (
     create_user,
     authenticate_user,
@@ -13,7 +15,11 @@ from database import (
     save_message,
     get_session_messages,
     update_session_summary,
-    get_session_summary
+    get_session_summary,
+    update_user_api_key,
+    delete_user,
+    delete_session,
+    get_db_connection
 )
 
 # Initialize Flask application with explicit static and templates folders
@@ -21,14 +27,74 @@ app = Flask(__name__,
             static_folder="static",
             template_folder="templates")
 
+# Temporary in-memory OTP verification store
+temp_otps = {}
+
+def send_otp_email(receiver_email, otp_code):
+    """Send an account verification email containing the 6-digit OTP."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    sender_email = os.getenv("SMTP_EMAIL")
+    sender_password = os.getenv("SMTP_PASSWORD")
+    smtp_server = os.getenv("SMTP_HOST")
+    smtp_port = os.getenv("SMTP_PORT")
+    
+    # Fallback checks
+    if not all([sender_email, sender_password, smtp_server, smtp_port]):
+        print("\n" + "!" * 60, file=sys.stderr)
+        print("[WARN] SMTP Credentials Missing in .env. Falling back to console OTP log.", file=sys.stderr)
+        print(f"[OTP VERIFICATION] Code for {receiver_email}: {otp_code}", file=sys.stderr)
+        print("!" * 60 + "\n", file=sys.stderr)
+        return
+    
+    try:
+        # Build SMTP MIME message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg['Subject'] = "Verify Your MBAssist AI Account"
+        
+        body = (
+            f"Welcome to MBAssist AI!\n\n"
+            f"Please enter the following 6-digit verification code to complete your registration:\n\n"
+            f"🔑 {otp_code}\n\n"
+            f"This code will expire shortly. If you did not sign up for an account, please ignore this email.\n\n"
+            f"Best regards,\n"
+            f"MBAssist AI Team"
+        )
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Connect and send via SSL or STARTTLS depending on port
+        port = int(smtp_port)
+        if port == 465:
+            server = smtplib.SMTP_SSL(smtp_server, port)
+        else:
+            server = smtplib.SMTP(smtp_server, port)
+            server.starttls()
+            
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+        server.quit()
+        print(f"[EMAIL] Verification email successfully sent to {receiver_email}", file=sys.stderr)
+    except Exception as e:
+        print(f"[ERROR] Failed to send SMTP email: {str(e)}. Falling back to console OTP.", file=sys.stderr)
+        print(f"[OTP VERIFICATION] Code for {receiver_email}: {otp_code}", file=sys.stderr)
+
 @app.route("/")
 def home():
     """Serve the admissions chatbot HTML page."""
     return render_template("index.html")
 
+@app.route("/dashboard")
+def dashboard():
+    """Serve the Account & Timeline Management Dashboard page."""
+    return render_template("dashboard.html")
+
 @app.route("/api/auth/register", methods=["POST"])
 def auth_register():
-    """Register a new user in the SQLite database."""
+    """Trigger OTP email verification flow during user registration."""
     try:
         data = request.get_json() or {}
         email = data.get("email", "").strip()
@@ -40,11 +106,58 @@ def auth_register():
         if not email or not password:
             return jsonify({"error": "Email and password are required fields."}), 400
 
-        user_id = create_user(email, password, groq_api_key if groq_api_key else None)
+        # Check if email already exists
+        conn = get_db_connection()
+        exists = conn.execute("SELECT user_id FROM users WHERE email = ?", (email.lower(),)).fetchone()
+        conn.close()
+        if exists:
+            return jsonify({"error": "Registration failed. This email is already in use."}), 400
+
+        # Generate a 6-digit OTP verification code
+        otp_code = f"{random.randint(100000, 999999)}"
+        temp_otps[email.lower()] = {
+            "password": password,
+            "groq_api_key": groq_api_key,
+            "otp": otp_code,
+            "timestamp": time.time()
+        }
+
+        # Send actual SMTP email or print console fallback
+        send_otp_email(email, otp_code)
+
+        return jsonify({"otp_required": True, "email": email})
+    except Exception as e:
+        print(f"[ERROR] Registration flow failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Registration failed: {str(e)}"}), 500
+
+@app.route("/api/auth/verify-otp", methods=["POST"])
+def auth_verify_otp():
+    """Verify registration OTP code and commit user profile to the SQLite database."""
+    try:
+        data = request.get_json() or {}
+        email = data.get("email", "").strip().lower()
+        otp_entered = data.get("otp", "").strip()
+
+        if not email or not otp_entered:
+            return jsonify({"error": "Email and verification code are required."}), 400
+
+        otp_record = temp_otps.get(email)
+        if not otp_record or otp_record["otp"] != otp_entered:
+            return jsonify({"error": "Invalid or expired verification code."}), 400
+
+        # Verification successful, register user in SQLite
+        user_id = create_user(
+            email, 
+            otp_record["password"], 
+            otp_record["groq_api_key"] if otp_record["groq_api_key"] else None
+        )
+        
+        # Cleanup temporary record
+        temp_otps.pop(email, None)
         return jsonify({"user_id": user_id, "email": email})
     except Exception as e:
-        print(f"[ERROR] Registration failed: {str(e)}", file=sys.stderr)
-        return jsonify({"error": "Registration failed. This email may already be in use."}), 400
+        print(f"[ERROR] OTP Verification failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Verification failed: {str(e)}"}), 500
 
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
@@ -65,6 +178,41 @@ def auth_login():
     except Exception as e:
         print(f"[ERROR] Login failed: {str(e)}", file=sys.stderr)
         return jsonify({"error": "An error occurred during authentication."}), 500
+
+@app.route("/api/auth/save-key", methods=["POST"])
+def auth_save_key():
+    """Save or update a user's custom Groq API Key."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get("user_id")
+        groq_key = data.get("groq_key")
+        if not user_id:
+            return jsonify({"error": "User ID is required."}), 400
+        
+        update_user_api_key(user_id, groq_key)
+        return jsonify({"success": "Groq API Key successfully updated."})
+    except Exception as e:
+        print(f"[ERROR] Save key failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Failed to update API Key: {str(e)}"}), 500
+
+@app.route("/api/auth/profile", methods=["GET"])
+def auth_profile():
+    """Retrieve user details (filtered) for the dashboard view."""
+    try:
+        user_id = request.args.get("user_id")
+        if not user_id:
+            return jsonify({"error": "User ID is required."}), 400
+        
+        user = get_user(user_id)
+        if not user:
+            return jsonify({"error": "User not found."}), 404
+            
+        # Omit password hash for security
+        user.pop("password_hash", None)
+        return jsonify(user)
+    except Exception as e:
+        print(f"[ERROR] Profile load failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Failed to load profile: {str(e)}"}), 500
 
 @app.route("/api/sessions", methods=["POST"])
 def session_create():
@@ -221,6 +369,31 @@ def transcribe():
     except Exception as e:
         print(f"[ERROR] Error in /api/transcribe: {str(e)}", file=sys.stderr)
         return jsonify({"error": f"Transcription failed: {str(e)}"}), 500
+
+@app.route("/api/auth/delete-account", methods=["POST"])
+def auth_delete_account():
+    """Delete a user account and purge all their saved history logs."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get("user_id")
+        if not user_id:
+            return jsonify({"error": "User ID is required."}), 400
+        
+        delete_user(user_id)
+        return jsonify({"success": "Account and all chat histories successfully deleted."})
+    except Exception as e:
+        print(f"[ERROR] Account deletion failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Failed to delete account: {str(e)}"}), 500
+
+@app.route("/api/sessions/<session_id>", methods=["DELETE"])
+def api_delete_session(session_id):
+    """Delete a specific chat session timeline and all its messages."""
+    try:
+        delete_session(session_id)
+        return jsonify({"success": "Session successfully deleted."})
+    except Exception as e:
+        print(f"[ERROR] Session deletion failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Failed to delete session: {str(e)}"}), 500
 
 def check_files():
     """Verify at startup that data or cache dependencies are in place."""

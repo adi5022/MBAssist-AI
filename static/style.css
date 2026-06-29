@@ -1375,6 +1375,28 @@ body {
     color: var(--accent-indigo);
 }
 
+/* Manage Account Link Button */
+.nav-dashboard-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.nav-dashboard-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
 /* Delete Account Button Styling */
 .delete-account-btn {
     background: rgba(239, 68, 68, 0.08);

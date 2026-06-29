@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBAssist AI — User Account Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
+    
+    <style>
+        /* Custom Dashboard Page Specific Styles */
+        .dashboard-container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 24px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .dashboard-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 30px;
+            text-align: left;
+            letter-spacing: -0.5px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dashboard-card {
+            background: rgba(17, 19, 44, 0.65);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(12px);
+        }
+
+        .card-header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: white;
+        }
+
+        /* Timeline list styling */
+        .timeline-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .timeline-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.25s ease;
+        }
+
+        .timeline-item:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.04);
+        }
+
+        .timeline-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .timeline-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .timeline-date {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .timeline-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-icon-btn.download-btn {
+            color: var(--accent-indigo);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .action-icon-btn.delete-btn {
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .action-icon-btn.download-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .action-icon-btn.delete-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        /* Form elements inside dashboard */
+        .dash-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            text-align: left;
+            margin-bottom: 16px;
+        }
+
+        .dash-input-group label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+        }
+
+        .dash-input-group input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: white;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .dash-input-group input:focus {
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        }
+
+        .dash-btn {
+            width: 100%;
+            background: var(--gradient-neon);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .dash-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .dash-btn.danger-btn {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .dash-btn.danger-btn:hover {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: #ef4444;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+        }
+
+        .back-nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .back-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification Overlay -->
+    <div class="toast-notification" id="toast-notification" style="display: none;">
+        <span class="toast-icon">✨</span>
+        <span class="toast-message" id="toast-message"></span>
+    </div>
+
+    <!-- Glowing Background Tech Nodes -->
+    <div class="network-bg">
+        <div class="glowing-node node-1"></div>
+        <div class="glowing-node node-2"></div>
+        <div class="glowing-node node-3"></div>
+        <div class="glowing-line line-1"></div>
+    </div>
+
+    <div class="landing-container">
+        <!-- Top Navbar -->
+        <header class="main-navbar">
+            <div class="brand-group">
+                <span class="brand-name">MBAssist <span class="accent-text">AI</span></span>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="back-nav-btn">Return to Chatbot</a>
+            </nav>
+        </header>
+
+        <div class="dashboard-container">
+            <h1 class="dashboard-title">Account <span class="accent-text">Dashboard</span></h1>
+
+            <div class="dashboard-grid">
+                <!-- Profile Settings -->
+                <div class="dashboard-card">
+                    <div class="card-header-title">
+                        <span>👤</span> Profile Information
+                    </div>
+                    <div class="profile-info">
+                        <div class="info-row">
+                            <span class="info-label">Email Address</span>
+                            <span class="info-value" id="profile-email">...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Account ID</span>
+                            <span class="info-value" id="profile-id" style="font-family: monospace; font-size: 10px;">...</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+                        <div class="card-header-title" style="margin-bottom: 8px;">
+                            <span>🔑</span> Custom API Limits
+                        </div>
+                        <p class="card-desc">Provide your custom Groq API Key to run chatbot queries completely free against your personal thresholds.</p>
+                        <form id="groq-key-form">
+                            <div class="dash-input-group">
+                                <label for="groq-key">Groq API Key</label>
+                                <input type="password" id="groq-key" placeholder="gsk_••••••••">
+                            </div>
+                            <button type="submit" class="dash-btn">Save API Key</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Chat Timeline Manager -->
+                <div class="dashboard-card" style="display: flex; flex-direction: column;">
+                    <div class="card-header-title">
+                        <span>💬</span> Chat timeline logs
+                    </div>
+                    <p class="card-desc">Review your conversation timelines. You can download text transcripts or delete discussions permanently.</p>
+                    
+                    <div class="timeline-list" id="timeline-list">
+                        <!-- Dynamic timelines rendered here -->
+                        <div style="padding: 16px; font-style: italic; color: var(--text-low); font-size: 12px;">Loading chat sessions...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="dashboard-card" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.03);">
+                <div class="card-header-title" style="color: #ef4444;">
+                    <span>⚠️</span> Danger Zone
+                </div>
+                <p class="card-desc" style="margin-bottom: 20px;">Permanently erase your MBAssist AI profile and purge all chronological timelines and memory context logs. This operation cannot be undone.</p>
+                <div style="max-width: 200px;">
+                    <button class="dash-btn danger-btn" id="delete-account-btn">Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Scripts -->
+    <script src="/static/dashboard.js?v=1.1"></script>
+</body>
+</html>

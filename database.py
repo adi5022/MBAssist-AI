@@ -179,5 +179,35 @@ def get_session_summary(session_id: str) -> str:
     conn.close()
     return row['summary'] if row and row['summary'] else ""
 
+def update_user_api_key(user_id: str, api_key: str):
+    """Update or save the user's custom Groq API Key."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET groq_api_key = ? WHERE user_id = ?",
+        (api_key.strip() if api_key else None, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_user(user_id: str):
+    """Delete a user account and cascade delete all their sessions and messages."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Explicitly enable foreign key cascades in SQLite connection
+    cursor.execute("PRAGMA foreign_keys = ON")
+    cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def delete_session(session_id: str):
+    """Delete a specific chat session and all of its associated messages."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
+    cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
     init_db()
