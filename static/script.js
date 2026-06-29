@@ -306,44 +306,40 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const langSelect = document.getElementById("lang-select");
-    const customLangSelector = document.getElementById("custom-lang-selector");
-    const langTriggerBtn = document.getElementById("lang-trigger-btn");
-    const langOptionsDropdown = document.getElementById("lang-options-dropdown");
-    const selectedLangLabel = document.getElementById("selected-lang-label");
+    const langWheelContainer = document.getElementById("lang-wheel-container");
+    const wheelTriggerBtn = document.getElementById("wheel-trigger-btn");
+    const selectedLangWheelVal = document.getElementById("selected-lang-wheel-val");
 
-    // Custom Language dropdown toggle
-    if (langTriggerBtn && langOptionsDropdown) {
-        langTriggerBtn.addEventListener("click", (e) => {
+    // Radial choice wheel toggle controller
+    if (wheelTriggerBtn && langWheelContainer) {
+        wheelTriggerBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            const isOpen = customLangSelector.classList.toggle("open");
-            langOptionsDropdown.style.display = isOpen ? "flex" : "none";
+            langWheelContainer.classList.toggle("open");
         });
-        
-        document.querySelectorAll(".lang-option").forEach(option => {
-            option.addEventListener("click", (e) => {
+
+        document.querySelectorAll(".wheel-item").forEach(item => {
+            item.addEventListener("click", (e) => {
                 e.stopPropagation();
-                const val = option.getAttribute("data-value");
+                const val = item.getAttribute("data-value");
                 
                 if (langSelect) langSelect.value = val;
                 
-                if (selectedLangLabel) {
-                    if (val === "en") selectedLangLabel.textContent = "EN";
-                    else if (val === "ml-mix") selectedLangLabel.textContent = "ML Mix";
-                    else if (val === "ml") selectedLangLabel.textContent = "ML Pure";
+                if (selectedLangWheelVal) {
+                    if (val === "en") selectedLangWheelVal.textContent = "EN";
+                    else if (val === "ml-mix") selectedLangWheelVal.textContent = "MIX";
+                    else if (val === "ml") selectedLangWheelVal.textContent = "ML";
                 }
                 
-                document.querySelectorAll(".lang-option").forEach(opt => opt.classList.remove("active"));
-                option.classList.add("active");
+                document.querySelectorAll(".wheel-item").forEach(i => i.classList.remove("active"));
+                item.classList.add("active");
                 
-                customLangSelector.classList.remove("open");
-                langOptionsDropdown.style.display = "none";
+                langWheelContainer.classList.remove("open");
             });
         });
-        
+
         document.addEventListener("click", (e) => {
-            if (customLangSelector && !customLangSelector.contains(e.target)) {
-                customLangSelector.classList.remove("open");
-                langOptionsDropdown.style.display = "none";
+            if (langWheelContainer && !langWheelContainer.contains(e.target)) {
+                langWheelContainer.classList.remove("open");
             }
         });
     }
@@ -353,7 +349,8 @@ document.addEventListener("DOMContentLoaded", () => {
         micBtn.classList.remove("recording");
         micBtn.style.display = "";
         sendButton.style.display = "";
-        if (customLangSelector) customLangSelector.style.display = ""; // Show dropdown again
+        if (chatForm) chatForm.classList.remove("recording"); // Remove panel glow animation
+        if (langWheelContainer) langWheelContainer.style.display = ""; // Show wheel again
         if (recordingOverlay) recordingOverlay.style.display = "none";
         
         if (timerInterval) {
@@ -403,7 +400,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Hide control buttons and show inline recording pill
             micBtn.style.display = "none";
             sendButton.style.display = "none";
-            if (customLangSelector) customLangSelector.style.display = "none"; // Hide dropdown
+            if (langWheelContainer) langWheelContainer.style.display = "none"; // Hide wheel
+            if (chatForm) chatForm.classList.add("recording"); // Trigger panel border glow
             if (recordingOverlay) recordingOverlay.style.display = "inline-flex";
 
             // Setup Web Audio API for visualizer & silence detection

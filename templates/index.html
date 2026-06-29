@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CSS Stylesheet -->
-    <link rel="stylesheet" href="/static/style.css?v=2.1">
+    <link rel="stylesheet" href="/static/style.css?v=2.2">
     <!-- Favicon -->
     <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
     <!-- Marked JS for Markdown parsing -->
@@ -231,20 +231,16 @@
                                         </button>
                                     </div>
 
-                                    <!-- Custom Language Selector Dropdown -->
-                                    <div class="custom-lang-selector" id="custom-lang-selector">
-                                        <button type="button" class="lang-trigger-btn" id="lang-trigger-btn" title="Select Voice Input Language">
-                                            <span id="selected-lang-label">EN</span>
-                                            <svg viewBox="0 0 24 24" width="10" height="10">
-                                                <path d="M7 10l5 5 5-5z" fill="currentColor"/>
-                                            </svg>
+                                    <!-- Radial Language Wheel Selector -->
+                                    <div class="lang-wheel-container" id="lang-wheel-container">
+                                        <button type="button" class="wheel-trigger-btn" id="wheel-trigger-btn" title="Select Voice Input Language">
+                                            <span id="selected-lang-wheel-val">EN</span>
                                         </button>
-                                        <div class="lang-options-dropdown" id="lang-options-dropdown" style="display: none;">
-                                            <div class="lang-option active" data-value="en">English (EN)</div>
-                                            <div class="lang-option" data-value="ml-mix">Malayalam Mix (ML-Mix)</div>
-                                            <div class="lang-option" data-value="ml">Malayalam Pure (ML)</div>
+                                        <div class="lang-wheel-items" id="lang-wheel-items">
+                                            <button type="button" class="wheel-item active" data-value="en" style="--angle: 0;" title="English">EN</button>
+                                            <button type="button" class="wheel-item" data-value="ml-mix" style="--angle: 1;" title="Malayalam Mix">MIX</button>
+                                            <button type="button" class="wheel-item" data-value="ml" style="--angle: 2;" title="Malayalam Pure">ML</button>
                                         </div>
-                                        <!-- Hidden input to store value -->
                                         <input type="hidden" id="lang-select" value="en">
                                     </div>
 
@@ -279,6 +275,6 @@
     </div>
 
     <!-- Client Script -->
-    <script src="/static/script.js?v=2.1"></script>
+    <script src="/static/script.js?v=2.2"></script>
 </body>
 </html>
