@@ -311,6 +311,45 @@
         </footer>
     </div>
 
+    <!-- Glassmorphic Authentication Overlay -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <span class="auth-title">MBAssist <span class="accent-text">AI</span></span>
+                <p class="auth-subtitle">Log in or register to track your chat sessions and optionally use your own Groq API key.</p>
+            </div>
+            
+            <!-- Auth Tab Toggles -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" type="button">Log In</button>
+                <button class="auth-tab" id="tab-register" type="button">Register</button>
+            </div>
+
+            <!-- Auth Form -->
+            <form id="auth-form" class="auth-form" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label for="auth-email">Email Address</label>
+                    <input type="email" id="auth-email" placeholder="student@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" required>
+                </div>
+                <div class="form-group register-only" id="register-key-group" style="display: none;">
+                    <label for="auth-groq-key">Custom Groq API Key (Optional)</label>
+                    <input type="password" id="auth-groq-key" placeholder="gsk_••••••••">
+                    <span class="field-hint">We will run queries against your own API limit.</span>
+                </div>
+                <div class="auth-error-msg" id="auth-error-msg" style="display: none;"></div>
+                <button type="submit" class="auth-submit-btn" id="auth-submit-btn">Log In</button>
+            </form>
+
+            <div class="auth-footer">
+                <button class="subtle-btn" id="auth-guest-btn" type="button">Continue as Guest (No History)</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Client Script -->
     <script src="/static/script.js?v=2.5"></script>
 </body>

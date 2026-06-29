@@ -14,8 +14,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearAllBtn = document.getElementById("clear-all-btn");
 
     // Local Storage Session State
-    let sessions = JSON.parse(localStorage.getItem("mbcet_chat_sessions")) || [];
+    let sessions = [];
     let activeSessionId = null;
+
+    // User Authentications & Sessions DOM variables
+    let currentUser = JSON.parse(localStorage.getItem("mbcet_user")) || null;
+    const authOverlay = document.getElementById("auth-overlay");
+    const authForm = document.getElementById("auth-form");
+    const authEmailInput = document.getElementById("auth-email");
+    const authPasswordInput = document.getElementById("auth-password");
+    const authKeyInput = document.getElementById("auth-groq-key");
+    const registerKeyGroup = document.getElementById("register-key-group");
+    const authErrorMsg = document.getElementById("auth-error-msg");
+    const authSubmitBtn = document.getElementById("auth-submit-btn");
+    const authGuestBtn = document.getElementById("auth-guest-btn");
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    let authMode = "login"; // "login" or "register"
 
     // Configure marked options for markdown processing
     marked.setOptions({
@@ -25,7 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const saveSessions = () => {
-        localStorage.setItem("mbcet_chat_sessions", JSON.stringify(sessions));
+        if (!currentUser) {
+            localStorage.setItem("mbcet_chat_sessions", JSON.stringify(sessions));
+        }
     };
 
     const scrollToBottom = () => {
@@ -135,24 +152,37 @@ document.addEventListener("DOMContentLoaded", () => {
         scrollToBottom();
     };
 
-    // Load full messages from selected session
-    const loadSession = (sessionId) => {
+    // Load messages or fetch from server if logged in
+    const loadSession = async (sessionId) => {
         activeSessionId = sessionId;
-        const session = sessions.find(s => s.id === sessionId);
-        if (!session) return;
-
         chatMessages.innerHTML = "";
         welcomeScreen.style.display = "none";
         chatMessages.style.display = "flex";
 
-        session.messages.forEach(msg => {
-            appendMessage(msg.text, msg.isUser, msg.pages);
-        });
-
+        if (currentUser) {
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}/messages`);
+                if (response.ok) {
+                    const messages = await response.json();
+                    messages.forEach(msg => {
+                        appendMessage(msg.text, msg.sender === 'user');
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load session messages:", error);
+            }
+        } else {
+            const session = sessions.find(s => s.id === sessionId);
+            if (session && session.messages) {
+                session.messages.forEach(msg => {
+                    appendMessage(msg.text, msg.isUser, msg.pages || []);
+                });
+            }
+        }
         renderHistoryList();
-        
-        // Hide sidebar drawer after loading the conversation
-        sidebar.classList.remove("open");
+        if (window.innerWidth <= 900) {
+            sidebar.classList.remove("open");
+        }
     };
 
     // Delete a specific session
@@ -534,28 +564,51 @@ document.addEventListener("DOMContentLoaded", () => {
         // Session Setup
         let currentSession;
         if (!activeSessionId) {
-            // Create a new session
-            const newId = Date.now().toString();
             const truncateTitle = query.length > 22 ? query.substring(0, 22) + "..." : query;
             
-            currentSession = {
-                id: newId,
-                title: truncateTitle,
-                messages: []
-            };
-            sessions.unshift(currentSession); // Add to beginning of history list
-            activeSessionId = newId;
+            if (currentUser) {
+                try {
+                    const response = await fetch("/api/sessions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: currentUser.user_id, title: truncateTitle })
+                    });
+                    if (response.ok) {
+                        const sData = await response.json();
+                        activeSessionId = sData.session_id;
+                        sessions.unshift({
+                            id: sData.session_id,
+                            title: truncateTitle,
+                            messages: []
+                        });
+                    }
+                } catch (error) {
+                    console.error("Failed to create remote session:", error);
+                }
+            }
+            
+            if (!activeSessionId) {
+                const newId = Date.now().toString();
+                currentSession = {
+                    id: newId,
+                    title: truncateTitle,
+                    messages: []
+                };
+                sessions.unshift(currentSession);
+                activeSessionId = newId;
+            }
         } else {
             currentSession = sessions.find(s => s.id === activeSessionId);
         }
 
-        // Add user query to session object
-        currentSession.messages.push({
-            text: query,
-            isUser: true,
-            pages: []
-        });
-        saveSessions();
+        if (currentSession) {
+            currentSession.messages.push({
+                text: query,
+                isUser: true,
+                pages: []
+            });
+            saveSessions();
+        }
 
         // Render user message on screen
         appendMessage(query, true);
@@ -585,12 +638,18 @@ document.addEventListener("DOMContentLoaded", () => {
         })();
 
         try {
+            const payload = {
+                message: query,
+                user_id: currentUser ? currentUser.user_id : null,
+                session_id: activeSessionId
+            };
+            
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ message: query })
+                body: JSON.stringify(payload)
             });
 
             typingIndicator.remove();
@@ -602,13 +661,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await response.json();
             
-            // Add bot answer to session object
-            currentSession.messages.push({
-                text: data.answer,
-                isUser: false,
-                pages: data.pages || []
-            });
-            saveSessions();
+            if (currentSession) {
+                currentSession.messages.push({
+                    text: data.answer,
+                    isUser: false,
+                    pages: data.pages || []
+                });
+                saveSessions();
+            }
 
             // Render bot answer
             appendMessage(data.answer, false, data.pages || []);
@@ -713,4 +773,99 @@ document.addEventListener("DOMContentLoaded", () => {
     widgetHeader.addEventListener("touchstart", dragStart);
     document.addEventListener("touchmove", dragMove, { passive: false });
     document.addEventListener("touchend", dragEnd);
+
+    // Dynamic Auth Overlay Events
+    if (tabLogin && tabRegister) {
+        tabLogin.addEventListener("click", () => {
+            authMode = "login";
+            tabLogin.classList.add("active");
+            tabRegister.classList.remove("active");
+            registerKeyGroup.style.display = "none";
+            authSubmitBtn.textContent = "Log In";
+            authErrorMsg.style.display = "none";
+        });
+        tabRegister.addEventListener("click", () => {
+            authMode = "register";
+            tabRegister.classList.add("active");
+            tabLogin.classList.remove("active");
+            registerKeyGroup.style.display = "block";
+            authSubmitBtn.textContent = "Register";
+            authErrorMsg.style.display = "none";
+        });
+    }
+
+    const loadSessionsFromServer = async () => {
+        if (!currentUser) return;
+        try {
+            const response = await fetch(`/api/sessions?user_id=${currentUser.user_id}`);
+            if (response.ok) {
+                const data = await response.json();
+                sessions = data.map(s => ({
+                    id: s.session_id,
+                    title: s.title,
+                    messages: []
+                }));
+                renderHistoryList();
+            }
+        } catch (error) {
+            console.error("Failed to load sessions from server:", error);
+        }
+    };
+
+    if (authForm) {
+        authForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            authErrorMsg.style.display = "none";
+            const email = authEmailInput.value.trim();
+            const password = authPasswordInput.value.trim();
+            const groq_api_key = authKeyInput.value.trim();
+
+            const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
+            const payload = authMode === "login" 
+                ? { email, password } 
+                : { email, password, groq_api_key: groq_api_key || null };
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || "Authentication failed.");
+                }
+                const data = await response.json();
+                currentUser = data;
+                localStorage.setItem("mbcet_user", JSON.stringify(data));
+                authOverlay.style.display = "none";
+                loadSessionsFromServer();
+            } catch (err) {
+                authErrorMsg.textContent = err.message;
+                authErrorMsg.style.display = "block";
+            }
+        });
+    }
+
+    if (authGuestBtn) {
+        authGuestBtn.addEventListener("click", () => {
+            currentUser = null;
+            localStorage.removeItem("mbcet_user");
+            sessions = JSON.parse(localStorage.getItem("mbcet_chat_sessions")) || [];
+            authOverlay.style.display = "none";
+            renderHistoryList();
+        });
+    }
+
+    // Initialize Auth state check on load
+    const checkAuth = () => {
+        if (currentUser) {
+            authOverlay.style.display = "none";
+            loadSessionsFromServer();
+        } else {
+            authOverlay.style.display = "flex";
+        }
+    };
+
+    checkAuth();
 });
