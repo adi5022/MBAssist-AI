@@ -1351,3 +1351,113 @@ body {
     border-color: var(--accent-indigo);
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
 }
+
+/* User Profile Badge */
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-left: 10px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.user-icon {
+    font-size: 11px;
+}
+
+.user-email-display {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-indigo);
+}
+
+/* Delete Account Button Styling */
+.delete-account-btn {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: all 0.25s ease;
+}
+
+.delete-account-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+}
+
+/* Toast Notifications */
+.toast-notification {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: rgba(17, 19, 44, 0.9);
+    border: 1px solid var(--accent-indigo);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3), 0 0 15px rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+    padding: 12px 20px;
+    color: white;
+    font-size: 12.5px;
+    font-weight: 700;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Authentication Perks Promo Box */
+.auth-promo-box {
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px dashed rgba(99, 102, 241, 0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 15px 0 20px 0;
+    max-width: 320px;
+    text-align: left;
+    display: inline-block;
+    align-self: center;
+}
+
+.promo-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--accent-indigo);
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+}
+
+.promo-icon {
+    flex-shrink: 0;
+}
+
+.promo-text {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin: 0;
+}

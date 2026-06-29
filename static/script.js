@@ -32,6 +32,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabRegister = document.getElementById("tab-register");
     let authMode = "login"; // "login" or "register"
 
+    const userBadge = document.getElementById("user-badge");
+    const userEmailDisplay = document.getElementById("user-email-display");
+    const toastNotification = document.getElementById("toast-notification");
+    const toastMessage = document.getElementById("toast-message");
+    const welcomeTitle = document.querySelector("#welcome-screen .welcome-title");
+
+    const showToast = (message, icon = "✨") => {
+        if (!toastNotification || !toastMessage) return;
+        toastMessage.textContent = message;
+        const iconEl = toastNotification.querySelector(".toast-icon");
+        if (iconEl) iconEl.textContent = icon;
+        toastNotification.style.display = "flex";
+        setTimeout(() => {
+            toastNotification.style.display = "none";
+        }, 4000);
+    };
+
     // Configure marked options for markdown processing
     marked.setOptions({
         gfm: true,
@@ -186,10 +203,17 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // Delete a specific session
-    const deleteSession = (sessionId, event) => {
+    const deleteSession = async (sessionId, event) => {
         event.stopPropagation(); // Avoid triggering loading the session
         
         if (confirm("Delete this discussion?")) {
+            if (currentUser) {
+                try {
+                    await fetch(`/api/sessions/${sessionId}`, { method: "DELETE" });
+                } catch (err) {
+                    console.error("Failed to delete session on server:", err);
+                }
+            }
             sessions = sessions.filter(s => s.id !== sessionId);
             saveSessions();
             if (activeSessionId === sessionId) {
@@ -197,6 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 renderHistoryList();
             }
+            showToast("Timeline deleted successfully.", "🗑️");
         }
     };
 
@@ -812,6 +837,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    const otpGroup = document.getElementById("otp-group");
+    const authOtpInput = document.getElementById("auth-otp");
+
     if (authForm) {
         authForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -820,35 +848,94 @@ document.addEventListener("DOMContentLoaded", () => {
             const password = authPasswordInput.value.trim();
             const groq_api_key = authKeyInput.value.trim();
 
-            const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
-            const payload = authMode === "login" 
-                ? { email, password } 
-                : { email, password, groq_api_key: groq_api_key || null };
-
-            try {
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || "Authentication failed.");
+            if (authMode === "register" && otpGroup && otpGroup.style.display !== "block") {
+                // Request OTP code
+                try {
+                    const response = await fetch("/api/auth/register", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, password, groq_api_key: groq_api_key || null })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || "Registration failed.");
+                    }
+                    // Transition to OTP Code Entry Card
+                    otpGroup.style.display = "block";
+                    registerKeyGroup.style.display = "none";
+                    authEmailInput.parentElement.style.display = "none";
+                    authPasswordInput.parentElement.style.display = "none";
+                    tabLogin.style.display = "none";
+                    tabRegister.style.display = "none";
+                    authSubmitBtn.textContent = "Verify Code";
+                    showToast("Verification code generated!", "🔑");
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = "block";
                 }
-                const data = await response.json();
-                currentUser = data;
-                localStorage.setItem("mbcet_user", JSON.stringify(data));
-                authOverlay.style.display = "none";
-                loadSessionsFromServer();
-            } catch (err) {
-                authErrorMsg.textContent = err.message;
-                authErrorMsg.style.display = "block";
+            } else if (authMode === "register" && otpGroup && otpGroup.style.display === "block") {
+                // Verify OTP entered
+                const otp = authOtpInput.value.trim();
+                try {
+                    const response = await fetch("/api/auth/verify-otp", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, otp })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || "Verification failed.");
+                    }
+                    const data = await response.json();
+                    
+                    // Reset registration modal visibility states
+                    otpGroup.style.display = "none";
+                    authEmailInput.parentElement.style.display = "block";
+                    authPasswordInput.parentElement.style.display = "block";
+                    tabLogin.style.display = "block";
+                    tabRegister.style.display = "block";
+                    authSubmitBtn.textContent = "Register";
+
+                    currentUser = data;
+                    localStorage.setItem("mbcet_user", JSON.stringify(data));
+                    authOverlay.style.display = "none";
+                    checkAuth();
+                    showToast("Account registered and verified successfully!", "✨");
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = "block";
+                }
+            } else {
+                // Standard Login flow
+                try {
+                    const response = await fetch("/api/auth/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, password })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || "Authentication failed.");
+                    }
+                    const data = await response.json();
+                    currentUser = data;
+                    localStorage.setItem("mbcet_user", JSON.stringify(data));
+                    authOverlay.style.display = "none";
+                    checkAuth();
+                    showToast("Logged in successfully!", "✨");
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = "block";
+                }
             }
         });
     }
 
     let isGuestMode = false;
     const navLoginBtn = document.getElementById("nav-login-btn");
+    const authPromoBox = document.getElementById("auth-promo-box");
+    const deleteAccountBtn = document.getElementById("delete-account-btn");
+    const downloadChatBtn = document.getElementById("download-chat-btn");
 
     if (authGuestBtn) {
         authGuestBtn.addEventListener("click", () => {
@@ -857,8 +944,8 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.removeItem("mbcet_user");
             sessions = JSON.parse(localStorage.getItem("mbcet_chat_sessions")) || [];
             authOverlay.style.display = "none";
-            if (navLoginBtn) navLoginBtn.textContent = "Log In";
-            renderHistoryList();
+            checkAuth();
+            showToast("Continuing as guest. History will not be saved.", "👤");
         });
     }
 
@@ -871,7 +958,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 isGuestMode = false;
                 localStorage.removeItem("mbcet_user");
                 sessions = [];
-                navLoginBtn.textContent = "Log In";
+                showToast("Logged out successfully.", "👋");
+                checkAuth();
                 resetChatScreen();
             } else {
                 // Show login overlay
@@ -903,15 +991,106 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!ensureAuth(e)) return;
     }, true); // Capture phase intercept
 
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener("click", async () => {
+            if (!currentUser) return;
+            if (confirm("Are you sure you want to permanently delete your account and all discussion logs? This action is irreversible.")) {
+                try {
+                    const response = await fetch("/api/auth/delete-account", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: currentUser.user_id })
+                    });
+                    if (response.ok) {
+                        currentUser = null;
+                        isGuestMode = false;
+                        localStorage.removeItem("mbcet_user");
+                        sessions = [];
+                        showToast("Account and discussion logs deleted.", "🗑️");
+                        checkAuth();
+                        resetChatScreen();
+                    } else {
+                        showToast("Failed to delete account.", "⚠️");
+                    }
+                } catch (err) {
+                    console.error("Delete account failed:", err);
+                    showToast("Failed to delete account.", "⚠️");
+                }
+            }
+        });
+    }
+
+    const downloadChatHistory = () => {
+        if (!activeSessionId) {
+            showToast("No active chat history to download.", "⚠️");
+            return;
+        }
+        
+        let chatContent = "";
+        const bubbles = document.querySelectorAll(".chat-message-row");
+        if (bubbles.length === 0) {
+            showToast("Discussion is empty.", "⚠️");
+            return;
+        }
+        bubbles.forEach(bubble => {
+            const isUser = bubble.classList.contains("user-row");
+            const sender = isUser ? "User" : "MBAssist AI";
+            const textEl = bubble.querySelector(".message-content");
+            if (textEl) {
+                chatContent += `[${sender}]\n${textEl.innerText.trim()}\n\n`;
+            }
+        });
+
+        const blob = new Blob([chatContent], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `mbcet_chat_${activeSessionId}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Transcript downloaded!", "💾");
+    };
+
+    if (downloadChatBtn) {
+        downloadChatBtn.addEventListener("click", downloadChatHistory);
+    }
+
     // Initialize Auth state check on load
     const checkAuth = () => {
+        // Reset dynamic OTP registration UI elements on check
+        if (otpGroup) otpGroup.style.display = "none";
+        authEmailInput.parentElement.style.display = "block";
+        authPasswordInput.parentElement.style.display = "block";
+        tabLogin.style.display = "block";
+        tabRegister.style.display = "block";
+        if (authMode === "register") {
+            authSubmitBtn.textContent = "Register";
+        } else {
+            authSubmitBtn.textContent = "Log In";
+        }
+
         if (currentUser) {
             authOverlay.style.display = "none";
             if (navLoginBtn) navLoginBtn.textContent = "Log Out";
+            if (deleteAccountBtn) deleteAccountBtn.style.display = "inline-block";
+            if (userBadge) userBadge.style.display = "inline-flex";
+            if (userEmailDisplay) userEmailDisplay.textContent = currentUser.email;
+            if (authPromoBox) authPromoBox.style.display = "none";
+            if (welcomeTitle) {
+                const username = currentUser.email.split('@')[0];
+                welcomeTitle.innerHTML = `Welcome back, <span class="accent-text" style="color: var(--accent-indigo); text-transform: capitalize;">${username}</span>!`;
+            }
             loadSessionsFromServer();
         } else {
             authOverlay.style.display = "none"; // Hide by default on load
             if (navLoginBtn) navLoginBtn.textContent = "Log In";
+            if (deleteAccountBtn) deleteAccountBtn.style.display = "none";
+            if (userBadge) userBadge.style.display = "none";
+            if (authPromoBox) authPromoBox.style.display = "block";
+            if (welcomeTitle) welcomeTitle.innerHTML = "Hello! I'm MBAssist AI";
+            renderHistoryList();
         }
     };
 
