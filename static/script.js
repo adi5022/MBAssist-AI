@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabLogin = document.getElementById("tab-login");
     const tabRegister = document.getElementById("tab-register");
     let authMode = "login"; // "login" or "register"
+    let failedLoginAttempts = 0;
 
     const toastNotification = document.getElementById("toast-notification");
     const toastMessage = document.getElementById("toast-message");
@@ -798,9 +799,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginForgotLinkWrapper = document.getElementById("login-forgot-link-wrapper");
 
     // Dynamic Auth Overlay Events
+    const resetPasswordFieldsVisibility = () => {
+        document.querySelectorAll(".password-wrapper input").forEach(input => {
+            input.type = "password";
+        });
+        document.querySelectorAll(".toggle-password-btn").forEach(btn => {
+            btn.textContent = "👁️";
+        });
+    };
+
+    // Toggle Password Visibility
+    document.querySelectorAll(".toggle-password-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const input = btn.parentElement.querySelector("input");
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈";
+            } else {
+                input.type = "password";
+                btn.textContent = "👁️";
+            }
+        });
+    });
+
     if (tabLogin && tabRegister) {
         tabLogin.addEventListener("click", () => {
             authMode = "login";
+            resetPasswordFieldsVisibility();
             tabLogin.classList.add("active");
             tabRegister.classList.remove("active");
             registerKeyGroup.style.display = "none";
@@ -814,6 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         tabRegister.addEventListener("click", () => {
             authMode = "register";
+            resetPasswordFieldsVisibility();
             tabRegister.classList.add("active");
             tabLogin.classList.remove("active");
             registerKeyGroup.style.display = "block";
@@ -991,6 +1017,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     authOverlay.style.display = "none";
                     checkAuth();
                     showToast("Logged in successfully!", "✨");
+                    failedLoginAttempts = 0;
                 } catch (err) {
                     authErrorMsg.textContent = err.message;
                     authErrorMsg.style.display = "block";
@@ -1052,6 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
         forgotPasswordLink.addEventListener("click", (e) => {
             e.preventDefault();
             authMode = "forgot";
+            resetPasswordFieldsVisibility();
             tabLogin.classList.remove("active");
             tabRegister.classList.remove("active");
             registerKeyGroup.style.display = "none";

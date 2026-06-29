@@ -48,7 +48,8 @@
                 <a href="https://mbcet.ac.in/admissions/" target="_blank" rel="noopener">MBCET Admissions</a>
                 <a href="https://mbcet.ac.in/academics/b-tech/" target="_blank" rel="noopener">B.Tech Programs</a>
                 <a href="https://mbcet.ac.in/contact/" target="_blank" rel="noopener">Contact Info</a>
-                <a href="/dashboard" class="nav-dashboard-btn" id="nav-dashboard-btn" style="display: none; text-decoration: none;">Manage Account</a>
+                <a href="/dashboard" class="nav-dashboard-btn" id="nav-dashboard-btn"
+                    style="display: none; text-decoration: none;">Manage Account</a>
                 <button class="nav-login-btn" id="nav-login-btn" type="button">Log In</button>
             </nav>
         </header>
@@ -172,14 +173,14 @@
                                             fill="currentColor" />
                                     </svg>
                                 </button>
-                                 <button class="action-icon-btn subtle-btn" id="clear-all-btn"
-                                     title="Clear Chat History">
-                                     <svg viewBox="0 0 24 24" width="16" height="16">
-                                         <path
-                                             d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                                             fill="currentColor" />
-                                     </svg>
-                                 </button>
+                                <button class="action-icon-btn subtle-btn" id="clear-all-btn"
+                                    title="Clear Chat History">
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <path
+                                            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                            fill="currentColor" />
+                                    </svg>
+                                </button>
                             </div>
                         </header>
 
@@ -294,15 +295,15 @@
                                         </svg>
                                     </button>
                                 </div>
-                             </form>
-                             <!-- Sarvam Warning Banner -->
-                             <div id="sarvam-warning-banner" class="sarvam-warning-banner" style="display: none;">
-                                 <svg class="warning-icon" viewBox="0 0 24 24" width="12" height="12">
-                                     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor" />
-                                 </svg>
-                                 <span>Using a model with limited usage. Please restrict use to Malayalam queries.</span>
-                             </div>
-                         </footer>
+                            </form>
+                            <!-- Sarvam Warning Banner -->
+                            <div id="sarvam-warning-banner" class="sarvam-warning-banner" style="display: none;">
+                                <svg class="warning-icon" viewBox="0 0 24 24" width="12" height="12">
+                                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor" />
+                                </svg>
+                                <span>Using a model with limited usage. Please restrict use to Malayalam queries.</span>
+                            </div>
+                        </footer>
                     </div>
                 </div>
             </section>
@@ -324,9 +325,10 @@
         <div class="auth-card">
             <div class="auth-header">
                 <span class="auth-title">MBAssist <span class="accent-text">AI</span></span>
-                <p class="auth-subtitle">Log in or register to track your chat sessions and optionally use your own Groq API key.</p>
+                <p class="auth-subtitle">Log in or register to track your chat sessions and optionally use your own Groq
+                    API key.</p>
             </div>
-            
+
             <!-- Auth Tab Toggles -->
             <div class="auth-tabs">
                 <button class="auth-tab active" id="tab-login" type="button">Log In</button>
@@ -341,10 +343,17 @@
                 </div>
                 <div class="form-group">
                     <label for="auth-password">Password</label>
-                    <input type="password" id="auth-password" placeholder="••••••••" required>
+                    <div class="password-wrapper">
+                        <input type="password" id="auth-password" placeholder="••••••••" required>
+                        <button type="button" class="toggle-password-btn"
+                            title="Toggle password visibility">👁️</button>
+                    </div>
                 </div>
-                <div class="form-group login-only" id="login-forgot-link-wrapper" style="margin-top: -10px; margin-bottom: 15px; text-align: right;">
-                    <a href="#" id="forgot-password-link" style="color: var(--accent-indigo); font-size: 11.5px; text-decoration: none; font-weight: 500;">Forgot Password?</a>
+                <div class="form-group login-only" id="login-forgot-link-wrapper"
+                    style="margin-top: -10px; margin-bottom: 15px; text-align: right;">
+                    <a href="#" id="forgot-password-link"
+                        style="color: var(--accent-indigo); font-size: 11.5px; text-decoration: none; font-weight: 500;">Forgot
+                        Password?</a>
                 </div>
                 <!-- Forgot Password Panels -->
                 <div class="form-group forgot-only" id="forgot-email-group" style="display: none;">
@@ -356,7 +365,11 @@
                     <label for="reset-otp">Reset Verification Code (OTP)</label>
                     <input type="text" id="reset-otp" placeholder="123456" maxlength="6" style="margin-bottom: 12px;">
                     <label for="reset-new-password">New Password</label>
-                    <input type="password" id="reset-new-password" placeholder="••••••••">
+                    <div class="password-wrapper">
+                        <input type="password" id="reset-new-password" placeholder="••••••••">
+                        <button type="button" class="toggle-password-btn"
+                            title="Toggle password visibility">👁️</button>
+                    </div>
                 </div>
                 <div class="form-group register-only" id="register-key-group" style="display: none;">
                     <label for="auth-groq-key">Custom Groq API Key (Optional)</label>
@@ -366,10 +379,14 @@
                 <div class="form-group otp-only" id="otp-group" style="display: none;">
                     <label for="auth-otp">Verification Code (OTP)</label>
                     <input type="text" id="auth-otp" placeholder="123456" maxlength="6">
-                    <span class="field-hint">A 6-digit verification code has been printed to the server terminal console.</span>
-                    <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                    <span class="field-hint">A 6-digit verification code has been printed to the server terminal
+                        console.</span>
+                    <div
+                        style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
                         <span style="color: var(--text-low);">📧 Check your spam/junk folder.</span>
-                        <a href="#" id="resend-otp-btn" style="color: var(--accent-indigo); text-decoration: none; font-weight: 700;">Resend Code</a>
+                        <a href="#" id="resend-otp-btn"
+                            style="color: var(--accent-indigo); text-decoration: none; font-weight: 700;">Resend
+                            Code</a>
                     </div>
                 </div>
                 <div class="auth-error-msg" id="auth-error-msg" style="display: none;"></div>
