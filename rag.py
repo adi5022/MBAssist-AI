@@ -15,6 +15,9 @@ class ChatState(BaseModel):
     action:      Optional[str]  = None
     docs:        Optional[list] = None
     answer:      Optional[str]  = None
+    api_key:     Optional[str]  = None
+    history:     Optional[list] = None
+    summary:     Optional[str]  = None
 
 def detect_language(text: str) -> tuple[str, str]:
     """Returns (lang_code, lang_name)."""
@@ -37,7 +40,7 @@ def node_planner(state: ChatState) -> ChatState:
         f"User question (may be in {state.lang_name}): {state.query}\n\n"
         "Route this: reply ONLY with 'retrieve' or 'answer_direct'."
     )
-    llm = get_llm()
+    llm = get_llm(state.api_key)
     decision = llm.chat(PLANNER_SYS, routing_prompt, max_tokens=8)
     state.action = "retrieve" if "retrieve" in decision.lower() else "answer_direct"
     print(f"  [planner]   {state.action}")
@@ -58,7 +61,19 @@ def node_answer(state: ChatState) -> ChatState:
         lang_name=state.lang_name, lang_code=state.lang_code
     )
 
-    llm = get_llm()
+    llm = get_llm(state.api_key)
+    
+    # Prefix chat memory history if present
+    history_str = ""
+    if state.summary:
+        history_str += f"Summary of previous conversation:\n{state.summary}\n\n"
+    if state.history:
+        history_str += "Recent conversation history:\n"
+        for msg in state.history:
+            role_name = "User" if msg.get('sender') == 'user' else "Assistant"
+            history_str += f"{role_name}: {msg.get('text')}\n"
+        history_str += "\n"
+
     if state.docs:
         passages = "\n\n".join(
             f"[Page {d['page']} | relevance {d['score']:.2f}]\n{d['text']}"
@@ -71,6 +86,7 @@ def node_answer(state: ChatState) -> ChatState:
     else:
         user_msg = state.query
 
+    user_msg = history_str + user_msg
     state.answer = llm.chat(sys_prompt, user_msg, max_tokens=700)
     return state
 
@@ -90,7 +106,7 @@ def node_verifier(state: ChatState) -> ChatState:
         f"Draft Answer:\n{state.answer}"
     )
     
-    llm = get_llm()
+    llm = get_llm(state.api_key)
     verified_answer = llm.chat(CRITIQUE_SYS, critique_prompt, max_tokens=700)
     state.answer = verified_answer
     print("  [verifier]  Audited and finalized response.")
@@ -120,7 +136,12 @@ graph.add_edge("verifier",  END)
 graph_app = graph.compile()
 print("[OK] LangGraph workflow compiled for MBCET Chatbot")
 
-def ask_chatbot(question: str) -> dict:
-    """Run the RAG pipeline for the given question and return state dictionary."""
-    result = graph_app.invoke({"query": question})
+def ask_chatbot(question: str, api_key: str = None, history: list = None, summary: str = None) -> dict:
+    """Run the RAG pipeline with user api_key, chat memory history, and conversation summary."""
+    result = graph_app.invoke({
+        "query": question,
+        "api_key": api_key,
+        "history": history,
+        "summary": summary
+    })
     return result

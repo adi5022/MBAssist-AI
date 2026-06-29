@@ -31,7 +31,9 @@ except Exception as e:
     # We will log or let it fail gracefully on demand
     pass
 
-def get_llm():
+def get_llm(api_key: str = None):
+    if api_key:
+        return GroqLLM(api_key=api_key)
     global llm
     if llm is None:
         llm = GroqLLM()
