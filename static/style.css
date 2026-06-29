@@ -1057,7 +1057,16 @@ body {
     background: rgba(99, 102, 241, 0.08);
     color: var(--accent-indigo);
     border-color: var(--accent-indigo);
-    transform: scale(1.15) !important;
+}
+
+.lang-wheel-container.open .wheel-item.angle-0:hover {
+    transform: translate(-170%, -150%) scale(1.15);
+}
+.lang-wheel-container.open .wheel-item.angle-1:hover {
+    transform: translate(-50%, -200%) scale(1.15);
+}
+.lang-wheel-container.open .wheel-item.angle-2:hover {
+    transform: translate(70%, -150%) scale(1.15);
 }
 
 .wheel-item.active {
