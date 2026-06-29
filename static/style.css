@@ -142,6 +142,7 @@ body {
 .nav-links {
     display: flex;
     gap: 32px;
+    align-items: center;
 }
 
 .nav-links a {
@@ -154,6 +155,25 @@ body {
 
 .nav-links a:hover {
     color: var(--accent-indigo);
+}
+
+.nav-login-btn {
+    background-color: var(--accent-indigo);
+    border: none;
+    color: white;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 8px 18px;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    font-family: var(--font-sans);
+}
+
+.nav-login-btn:hover {
+    background-color: #3b32c6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
 }
 
 .nav-buttons {
@@ -1332,26 +1352,6 @@ body {
     text-align: left;
 }
 
-/* Nav Login Button Styling */
-.nav-login-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    padding: 6px 14px;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-left: 10px;
-    transition: all 0.25s ease;
-}
-
-.nav-login-btn:hover {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: var(--accent-indigo);
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
-}
-
 /* User Profile Badge */
 .user-badge {
     display: inline-flex;
@@ -1373,28 +1373,6 @@ body {
     font-size: 11px;
     font-weight: 700;
     color: var(--accent-indigo);
-}
-
-/* Manage Account Link Button */
-.nav-dashboard-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    padding: 6px 14px;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-}
-
-.nav-dashboard-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: white;
 }
 
 /* Delete Account Button Styling */

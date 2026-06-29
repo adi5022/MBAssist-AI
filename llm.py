@@ -92,6 +92,8 @@ CRITIQUE_SYS = textwrap.dedent("""
     4. Language Consistency: Make sure the final response is in the same language as the user query.
     5. Format preservation: Maintain clear headers and list styles.
     
+    CRITICAL: Output ONLY the final, corrected, and verified answer text. 
+    Do NOT include any introduction, explanations, auditing notes, reasoning, preambles, comments, or thoughts. Your entire response must be the exact user-facing answer.
+    
     If the draft is already 100% accurate, factual, and supported, output the draft EXACTLY as it is.
-    Otherwise, output the corrected and verified answer.
 """).strip()
