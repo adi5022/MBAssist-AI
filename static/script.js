@@ -847,23 +847,71 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    let isGuestMode = false;
+    const navLoginBtn = document.getElementById("nav-login-btn");
+
     if (authGuestBtn) {
         authGuestBtn.addEventListener("click", () => {
             currentUser = null;
+            isGuestMode = true;
             localStorage.removeItem("mbcet_user");
             sessions = JSON.parse(localStorage.getItem("mbcet_chat_sessions")) || [];
             authOverlay.style.display = "none";
+            if (navLoginBtn) navLoginBtn.textContent = "Log In";
             renderHistoryList();
         });
     }
+
+    // Navbar Login/Logout button toggling
+    if (navLoginBtn) {
+        navLoginBtn.addEventListener("click", () => {
+            if (currentUser) {
+                // Log Out action
+                currentUser = null;
+                isGuestMode = false;
+                localStorage.removeItem("mbcet_user");
+                sessions = [];
+                navLoginBtn.textContent = "Log In";
+                resetChatScreen();
+            } else {
+                // Show login overlay
+                authOverlay.style.display = "flex";
+            }
+        });
+    }
+
+    // Intercept chat actions to prompt login if not authenticated
+    const ensureAuth = (e) => {
+        if (!currentUser && !isGuestMode) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            chatInput.blur();
+            authOverlay.style.display = "flex";
+            return false;
+        }
+        return true;
+    };
+
+    // Attach chat interaction checks
+    chatInput.addEventListener("focus", ensureAuth);
+    chatInput.addEventListener("keydown", (e) => {
+        if (!ensureAuth(e)) return;
+    });
+    micBtn.addEventListener("click", (e) => {
+        if (!ensureAuth(e)) return;
+    }, true); // Capture phase intercept
 
     // Initialize Auth state check on load
     const checkAuth = () => {
         if (currentUser) {
             authOverlay.style.display = "none";
+            if (navLoginBtn) navLoginBtn.textContent = "Log Out";
             loadSessionsFromServer();
         } else {
-            authOverlay.style.display = "flex";
+            authOverlay.style.display = "none"; // Hide by default on load
+            if (navLoginBtn) navLoginBtn.textContent = "Log In";
         }
     };
 

@@ -33,7 +33,9 @@ def auth_register():
         data = request.get_json() or {}
         email = data.get("email", "").strip()
         password = data.get("password", "").strip()
-        groq_api_key = data.get("groq_api_key", "").strip()
+        groq_api_key = data.get("groq_api_key")
+        if groq_api_key:
+            groq_api_key = groq_api_key.strip()
 
         if not email or not password:
             return jsonify({"error": "Email and password are required fields."}), 400
