@@ -1157,44 +1157,6 @@ body {
     background: #dc2626;
     transform: scale(1.05);
 }
-
-/* Sarvam Credits Indicator */
-.sarvam-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 10px;
-    background: rgba(99, 102, 241, 0.06);
-    border: 1px solid rgba(99, 102, 241, 0.15);
-    border-radius: 20px;
-    font-size: 10.5px;
-    font-weight: 700;
-    color: var(--accent-indigo);
-    margin-right: 6px;
-    height: 32px;
-}
-
-.sarvam-circle-svg {
-    transform: rotate(-90deg);
-}
-
-.sarvam-circle-svg circle {
-    fill: none;
-    stroke-width: 2.5;
-}
-
-.sarvam-circle-svg circle.bg {
-    stroke: rgba(99, 102, 241, 0.15);
-}
-
-.sarvam-circle-svg circle.fg {
-    stroke: var(--accent-indigo);
-    stroke-linecap: round;
-    stroke-dasharray: 50.24; /* 2 * PI * r = 2 * 3.14 * 8 = 50.24 */
-    stroke-dashoffset: 0;
-    transition: stroke-dashoffset 0.3s ease;
-}
-
 .sarvam-warning-banner {
     display: none;
     align-items: center;

@@ -8,11 +8,12 @@ def contains_malayalam(text: str) -> bool:
     """Return True if text contains Malayalam Unicode characters."""
     return any('\u0d00' <= char <= '\u0d7f' for char in text)
 
-def transcribe_audio(file_bytes: bytes, filename: str = "audio.webm", language: str = "en") -> str:
+def transcribe_audio(file_bytes: bytes, filename: str = "audio.webm", language: str = "en") -> tuple[str, bool]:
     """Transcribe audio.
     If language is 'en', uses Groq Whisper.
     If language is 'ml-mix', uses Sarvam AI with mode='codemix'.
     If language is 'ml', uses Sarvam AI with mode='transcribe'.
+    Returns (transcription_text, used_sarvam).
     """
     sarvam_key = os.environ.get("SARVAM_AI")
 
@@ -34,7 +35,7 @@ def transcribe_audio(file_bytes: bytes, filename: str = "audio.webm", language: 
                 sarvam_text = response.json().get("transcript", "").strip()
                 if sarvam_text:
                     print(f"[OK] Sarvam AI transcription success ({mode}).")
-                    return sarvam_text
+                    return sarvam_text, True
             else:
                 print(f"[WARN] Sarvam AI API returned code {response.status_code}: {response.text}")
         except Exception as se:
@@ -53,9 +54,9 @@ def transcribe_audio(file_bytes: bytes, filename: str = "audio.webm", language: 
                 model="whisper-large-v3",
                 response_format="json"
             )
-            return transcription.text.strip()
+            return transcription.text.strip(), False
     except Exception as e:
         print(f"[ERROR] Groq Whisper transcription failed: {str(e)}")
 
-    return ""
+    return "", False
 

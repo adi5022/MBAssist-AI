@@ -251,43 +251,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const cancelRecordBtn = document.getElementById("cancel-record-btn");
     const stopRecordBtn = document.getElementById("stop-record-btn");
     
-    // Sarvam Credit references
-    const sarvamIndicator = document.getElementById("sarvam-indicator");
-    const sarvamCircleFg = document.getElementById("sarvam-circle-fg");
-    const sarvamCreditText = document.getElementById("sarvam-credit-text");
-
     const formatTimer = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
-
-    const updateSarvamCredits = async () => {
-        if (!sarvamIndicator) return;
-        try {
-            const response = await fetch("/api/sarvam-usage");
-            if (!response.ok) throw new Error();
-            const data = await response.json();
-            
-            const remaining = parseFloat(data.credits_remaining ?? 0);
-            const total = parseFloat(data.total_credits ?? 1.0);
-            
-            // Format to 2 decimal places with currency symbol
-            sarvamCreditText.textContent = `₹${remaining.toFixed(2)}`;
-            sarvamIndicator.style.display = "inline-flex";
-
-            // Update circular progress bar
-            const percentage = Math.min(100, Math.max(0, (remaining / total) * 100));
-            const circumference = 2 * Math.PI * 8; // r = 8 -> 50.24
-            const offset = circumference - (percentage / 100) * circumference;
-            sarvamCircleFg.style.strokeDashoffset = offset;
-        } catch (error) {
-            sarvamIndicator.style.display = "none";
-        }
-    };
-
-    // Load initial Sarvam credits balance
-    updateSarvamCredits();
 
     const stopRecording = () => {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -309,7 +277,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const langWheelContainer = document.getElementById("lang-wheel-container");
     const wheelTriggerBtn = document.getElementById("wheel-trigger-btn");
     const selectedLangWheelVal = document.getElementById("selected-lang-wheel-val");
-
     const sarvamWarningBanner = document.getElementById("sarvam-warning-banner");
 
     // Radial choice wheel toggle controller
@@ -507,6 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     const selectedLang = langSelect ? langSelect.value : "en";
                     formData.append("language", selectedLang);
+                    formData.append("duration", recordingDuration);
 
                     const response = await fetch("/api/transcribe", {
                         method: "POST",
@@ -523,9 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         chatInput.value = data.text.trim();
                         chatInput.dispatchEvent(new Event("input"));
                     }
-                    
-                    // Update Sarvam credits balance after transcription finishes
-                    updateSarvamCredits();
+
                 } catch (error) {
                     console.error("Transcription error:", error);
                     alert(`Speech-to-Text failed: ${error.message}`);
