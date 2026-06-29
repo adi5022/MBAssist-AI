@@ -970,6 +970,7 @@ body {
         gap: 12px;
         text-align: center;
 }
+}
 
 /* Radial Language Selection Wheel */
 .lang-wheel-container {
@@ -1039,15 +1040,15 @@ body {
 }
 
 /* Radial expanding arc coordinates */
-.lang-wheel-container.open .wheel-item[style*="--angle: 0"] {
+.lang-wheel-container.open .wheel-item.angle-0 {
     opacity: 1;
     transform: translate(-170%, -150%) scale(1);
 }
-.lang-wheel-container.open .wheel-item[style*="--angle: 1"] {
+.lang-wheel-container.open .wheel-item.angle-1 {
     opacity: 1;
     transform: translate(-50%, -200%) scale(1);
 }
-.lang-wheel-container.open .wheel-item[style*="--angle: 2"] {
+.lang-wheel-container.open .wheel-item.angle-2 {
     opacity: 1;
     transform: translate(70%, -150%) scale(1);
 }

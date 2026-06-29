@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CSS Stylesheet -->
-    <link rel="stylesheet" href="/static/style.css?v=2.2">
+    <link rel="stylesheet" href="/static/style.css?v=2.3">
     <!-- Favicon -->
     <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
     <!-- Marked JS for Markdown parsing -->
@@ -237,9 +237,9 @@
                                             <span id="selected-lang-wheel-val">EN</span>
                                         </button>
                                         <div class="lang-wheel-items" id="lang-wheel-items">
-                                            <button type="button" class="wheel-item active" data-value="en" style="--angle: 0;" title="English">EN</button>
-                                            <button type="button" class="wheel-item" data-value="ml-mix" style="--angle: 1;" title="Malayalam Mix">MIX</button>
-                                            <button type="button" class="wheel-item" data-value="ml" style="--angle: 2;" title="Malayalam Pure">ML</button>
+                                            <button type="button" class="wheel-item angle-0 active" data-value="en" title="English">EN</button>
+                                            <button type="button" class="wheel-item angle-1" data-value="ml-mix" title="Malayalam Mix">MIX</button>
+                                            <button type="button" class="wheel-item angle-2" data-value="ml" title="Malayalam Pure">ML</button>
                                         </div>
                                         <input type="hidden" id="lang-select" value="en">
                                     </div>
@@ -275,6 +275,6 @@
     </div>
 
     <!-- Client Script -->
-    <script src="/static/script.js?v=2.2"></script>
+    <script src="/static/script.js?v=2.3"></script>
 </body>
 </html>
