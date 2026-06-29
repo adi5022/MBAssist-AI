@@ -310,6 +310,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const wheelTriggerBtn = document.getElementById("wheel-trigger-btn");
     const selectedLangWheelVal = document.getElementById("selected-lang-wheel-val");
 
+    const sarvamWarningBanner = document.getElementById("sarvam-warning-banner");
+
     // Radial choice wheel toggle controller
     if (wheelTriggerBtn && langWheelContainer) {
         wheelTriggerBtn.addEventListener("click", (e) => {
@@ -328,6 +330,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (val === "en") selectedLangWheelVal.textContent = "EN";
                     else if (val === "ml-mix") selectedLangWheelVal.textContent = "MIX";
                     else if (val === "ml") selectedLangWheelVal.textContent = "ML";
+                }
+                
+                if (sarvamWarningBanner) {
+                    if (val === "ml" || val === "ml-mix") {
+                        sarvamWarningBanner.style.display = "flex";
+                    } else {
+                        sarvamWarningBanner.style.display = "none";
+                    }
                 }
                 
                 document.querySelectorAll(".wheel-item").forEach(i => i.classList.remove("active"));

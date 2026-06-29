@@ -1194,3 +1194,23 @@ body {
     stroke-dashoffset: 0;
     transition: stroke-dashoffset 0.3s ease;
 }
+
+.sarvam-warning-banner {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #d97706;
+    margin-top: 8px;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.sarvam-warning-banner .warning-icon {
+    color: #f59e0b;
+    flex-shrink: 0;
+}
