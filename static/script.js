@@ -12,6 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const attachBtn = document.getElementById("attach-btn");
     const historyList = document.getElementById("history-list");
     const clearAllBtn = document.getElementById("clear-all-btn");
+    
+    // UI Widget drag & fullscreen selectors
+    const chatbotWidget = document.getElementById("chatbot-widget");
+    const widgetHeader = document.getElementById("widget-header");
 
     // Local Storage Session State
     let sessions = [];
@@ -31,6 +35,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabLogin = document.getElementById("tab-login");
     const tabRegister = document.getElementById("tab-register");
     let authMode = "login"; // "login" or "register"
+
+    const toastNotification = document.getElementById("toast-notification");
+    const toastMessage = document.getElementById("toast-message");
+    const welcomeTitle = document.querySelector("#welcome-screen .welcome-title");
+
+    const showToast = (message, icon = "✨") => {
+        if (!toastNotification || !toastMessage) return;
+        toastMessage.textContent = message;
+        const iconEl = toastNotification.querySelector(".toast-icon");
+        if (iconEl) iconEl.textContent = icon;
+        toastNotification.style.display = "flex";
+        setTimeout(() => {
+            toastNotification.style.display = "none";
+        }, 4000);
+    };
 
     // Configure marked options for markdown processing
     marked.setOptions({

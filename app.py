@@ -56,15 +56,36 @@ def send_otp_email(receiver_email, otp_code):
         msg['To'] = receiver_email
         msg['Subject'] = "Verify Your MBAssist AI Account"
         
-        body = (
-            f"Welcome to MBAssist AI!\n\n"
-            f"Please enter the following 6-digit verification code to complete your registration:\n\n"
-            f"🔑 {otp_code}\n\n"
-            f"This code will expire shortly. If you did not sign up for an account, please ignore this email.\n\n"
-            f"Best regards,\n"
-            f"MBAssist AI Team"
-        )
-        msg.attach(MIMEText(body, 'plain'))
+        html_content = f"""
+        <html>
+        <body style="margin: 0; padding: 0; font-family: 'Outfit', 'Inter', sans-serif; background-color: #0b0d1b; color: #f3f4f6; text-align: center;">
+            <div style="max-width: 500px; margin: 40px auto; padding: 40px 32px; background: #11132c; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); text-align: center;">
+                <div style="margin-bottom: 24px;">
+                    <span style="font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; font-family: 'Outfit', sans-serif;">MBAssist <span style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #6366f1;">AI</span></span>
+                </div>
+                
+                <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Confirm Your Registration</h2>
+                <p style="font-size: 13.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 28px; font-family: 'Inter', sans-serif; padding: 0 10px;">
+                    Thank you for signing up for the MBAssist AI admissions guide! Enter the 6-digit verification code below to secure your chat history and unlock your dashboard.
+                </p>
+                
+                <div style="background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 20px 30px; margin-bottom: 28px; display: inline-block; box-shadow: 0 0 15px rgba(99, 102, 241, 0.05);">
+                    <span style="font-size: 36px; font-weight: 800; color: #6366f1; letter-spacing: 6px; padding-left: 6px; font-family: monospace;">{otp_code}</span>
+                </div>
+                
+                <p style="font-size: 11.5px; color: #6b7280; line-height: 1.4; margin-bottom: 32px; font-family: 'Inter', sans-serif; padding: 0 20px;">
+                    This code is valid for a limited time. If you did not initiate this request, you can safely ignore this email.
+                </p>
+                
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; font-size: 10.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.5;">
+                    Mar Baselios College of Engineering and Technology Admissions Guide<br>
+                    <span style="color: #6366f1;">mbcet.ac.in</span>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(html_content, 'html'))
         
         # Connect and send via SSL or STARTTLS depending on port
         port = int(smtp_port)
