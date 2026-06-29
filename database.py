@@ -209,5 +209,17 @@ def delete_session(session_id: str):
     conn.commit()
     conn.close()
 
+def update_user_password(email: str, new_password: str):
+    """Update a user's password hash securely in the SQLite database."""
+    password_hash = hash_password(new_password)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET password_hash = ? WHERE email = ?",
+        (password_hash, email.strip().lower())
+    )
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
     init_db()

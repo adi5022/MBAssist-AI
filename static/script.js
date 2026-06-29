@@ -793,6 +793,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("touchmove", dragMove, { passive: false });
     document.addEventListener("touchend", dragEnd);
 
+    const forgotEmailGroup = document.getElementById("forgot-email-group");
+    const resetFieldsGroup = document.getElementById("reset-fields-group");
+    const loginForgotLinkWrapper = document.getElementById("login-forgot-link-wrapper");
+
     // Dynamic Auth Overlay Events
     if (tabLogin && tabRegister) {
         tabLogin.addEventListener("click", () => {
@@ -800,6 +804,11 @@ document.addEventListener("DOMContentLoaded", () => {
             tabLogin.classList.add("active");
             tabRegister.classList.remove("active");
             registerKeyGroup.style.display = "none";
+            if (forgotEmailGroup) forgotEmailGroup.style.display = "none";
+            if (resetFieldsGroup) resetFieldsGroup.style.display = "none";
+            if (loginForgotLinkWrapper) loginForgotLinkWrapper.style.display = "block";
+            authEmailInput.parentElement.style.display = "block";
+            authPasswordInput.parentElement.style.display = "block";
             authSubmitBtn.textContent = "Log In";
             authErrorMsg.style.display = "none";
         });
@@ -808,6 +817,11 @@ document.addEventListener("DOMContentLoaded", () => {
             tabRegister.classList.add("active");
             tabLogin.classList.remove("active");
             registerKeyGroup.style.display = "block";
+            if (forgotEmailGroup) forgotEmailGroup.style.display = "none";
+            if (resetFieldsGroup) resetFieldsGroup.style.display = "none";
+            if (loginForgotLinkWrapper) loginForgotLinkWrapper.style.display = "none";
+            authEmailInput.parentElement.style.display = "block";
+            authPasswordInput.parentElement.style.display = "block";
             authSubmitBtn.textContent = "Register";
             authErrorMsg.style.display = "none";
         });
@@ -843,7 +857,57 @@ document.addEventListener("DOMContentLoaded", () => {
             const password = authPasswordInput.value.trim();
             const groq_api_key = authKeyInput.value.trim();
 
-            if (authMode === "register" && otpGroup && otpGroup.style.display !== "block") {
+            if (authMode === "forgot") {
+                // Request Reset OTP
+                const forgotEmailInput = document.getElementById("forgot-email");
+                const forgotEmail = forgotEmailInput.value.trim();
+                try {
+                    const response = await fetch("/api/auth/forgot-password", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: forgotEmail })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || "Password reset request failed.");
+                    }
+                    // Transition to Reset Code & New Password Entry
+                    forgotEmailGroup.style.display = "none";
+                    resetFieldsGroup.style.display = "block";
+                    authMode = "reset";
+                    authSubmitBtn.textContent = "Verify & Reset";
+                    showToast("Password reset code sent!", "🔑");
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = "block";
+                }
+            } else if (authMode === "reset") {
+                // Verify Code & Update password
+                const forgotEmailInput = document.getElementById("forgot-email");
+                const forgotEmail = forgotEmailInput.value.trim();
+                const resetOtpInput = document.getElementById("reset-otp");
+                const resetOtp = resetOtpInput.value.trim();
+                const newPasswordInput = document.getElementById("reset-new-password");
+                const newPassword = newPasswordInput.value.trim();
+
+                try {
+                    const response = await fetch("/api/auth/reset-password", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: forgotEmail, otp: resetOtp, new_password: newPassword })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || "Password reset verification failed.");
+                    }
+                    // Return back to standard login screen
+                    tabLogin.click();
+                    showToast("Password updated! Please log in.", "✨");
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = "block";
+                }
+            } else if (authMode === "register" && otpGroup && otpGroup.style.display !== "block") {
                 // Request OTP code via SMTP
                 try {
                     const response = await fetch("/api/auth/register", {
@@ -854,6 +918,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!response.ok) {
                         const err = await response.json();
                         throw new Error(err.error || "Registration failed.");
+                    }
+                    const resData = await response.json();
+                    const otpHint = otpGroup.querySelector(".field-hint");
+                    if (otpHint) {
+                        if (resData.email_sent) {
+                            otpHint.textContent = "A 6-digit verification code has been emailed to your address.";
+                        } else {
+                            otpHint.textContent = "A 6-digit verification code has been printed to the server terminal console.";
+                        }
                     }
                     // Transition to OTP Code Entry Card
                     otpGroup.style.display = "block";
@@ -926,6 +999,77 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    const resendOtpBtn = document.getElementById("resend-otp-btn");
+    if (resendOtpBtn) {
+        resendOtpBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            authErrorMsg.style.display = "none";
+            const email = authEmailInput.value.trim();
+
+            if (!email) {
+                showToast("Email address is required.", "⚠️");
+                return;
+            }
+
+            try {
+                resendOtpBtn.textContent = "Resending...";
+                resendOtpBtn.style.pointerEvents = "none";
+
+                const response = await fetch("/api/auth/resend-otp", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || "Resend failed.");
+                }
+
+                const otpHint = otpGroup.querySelector(".field-hint");
+                if (otpHint) {
+                    if (data.email_sent) {
+                        otpHint.textContent = "A fresh verification code has been emailed to your address.";
+                    } else {
+                        otpHint.textContent = "A fresh verification code has been printed to the server terminal console.";
+                    }
+                }
+
+                showToast("Verification code resent!", "🔑");
+            } catch (err) {
+                authErrorMsg.textContent = err.message;
+                authErrorMsg.style.display = "block";
+                showToast("Failed to resend code.", "⚠️");
+            } finally {
+                resendOtpBtn.textContent = "Resend Code";
+                resendOtpBtn.style.pointerEvents = "";
+            }
+        });
+    }
+
+    const forgotPasswordLink = document.getElementById("forgot-password-link");
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            authMode = "forgot";
+            tabLogin.classList.remove("active");
+            tabRegister.classList.remove("active");
+            registerKeyGroup.style.display = "none";
+            authEmailInput.parentElement.style.display = "none";
+            authPasswordInput.parentElement.style.display = "none";
+            if (loginForgotLinkWrapper) loginForgotLinkWrapper.style.display = "none";
+            
+            if (forgotEmailGroup) {
+                forgotEmailGroup.style.display = "block";
+                const forgotEmailInput = document.getElementById("forgot-email");
+                if (forgotEmailInput) forgotEmailInput.value = authEmailInput.value;
+            }
+            if (resetFieldsGroup) resetFieldsGroup.style.display = "none";
+            
+            authSubmitBtn.textContent = "Send Reset Code";
+            authErrorMsg.style.display = "none";
+        });
+    }
     let isGuestMode = false;
     const navLoginBtn = document.getElementById("nav-login-btn");
 

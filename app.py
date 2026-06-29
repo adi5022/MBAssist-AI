@@ -19,7 +19,8 @@ from database import (
     update_user_api_key,
     delete_user,
     delete_session,
-    get_db_connection
+    get_db_connection,
+    update_user_password
 )
 
 # Initialize Flask application with explicit static and templates folders
@@ -47,7 +48,7 @@ def send_otp_email(receiver_email, otp_code):
         print("[WARN] SMTP Credentials Missing in .env. Falling back to console OTP log.", file=sys.stderr)
         print(f"[OTP VERIFICATION] Code for {receiver_email}: {otp_code}", file=sys.stderr)
         print("!" * 60 + "\n", file=sys.stderr)
-        return
+        return False
     
     try:
         # Build SMTP MIME message
@@ -58,30 +59,37 @@ def send_otp_email(receiver_email, otp_code):
         
         html_content = f"""
         <html>
-        <body style="margin: 0; padding: 0; font-family: 'Outfit', 'Inter', sans-serif; background-color: #0b0d1b; color: #f3f4f6; text-align: center;">
-            <div style="max-width: 500px; margin: 40px auto; padding: 40px 32px; background: #11132c; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); text-align: center;">
-                <div style="margin-bottom: 24px;">
-                    <span style="font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; font-family: 'Outfit', sans-serif;">MBAssist <span style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #6366f1;">AI</span></span>
-                </div>
-                
-                <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Confirm Your Registration</h2>
-                <p style="font-size: 13.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 28px; font-family: 'Inter', sans-serif; padding: 0 10px;">
-                    Thank you for signing up for the MBAssist AI admissions guide! Enter the 6-digit verification code below to secure your chat history and unlock your dashboard.
-                </p>
-                
-                <div style="background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 20px 30px; margin-bottom: 28px; display: inline-block; box-shadow: 0 0 15px rgba(99, 102, 241, 0.05);">
-                    <span style="font-size: 36px; font-weight: 800; color: #6366f1; letter-spacing: 6px; padding-left: 6px; font-family: monospace;">{otp_code}</span>
-                </div>
-                
-                <p style="font-size: 11.5px; color: #6b7280; line-height: 1.4; margin-bottom: 32px; font-family: 'Inter', sans-serif; padding: 0 20px;">
-                    This code is valid for a limited time. If you did not initiate this request, you can safely ignore this email.
-                </p>
-                
-                <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; font-size: 10.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.5;">
-                    Mar Baselios College of Engineering and Technology Admissions Guide<br>
-                    <span style="color: #6366f1;">mbcet.ac.in</span>
-                </div>
-            </div>
+        <body style="margin: 0; padding: 0; font-family: 'Outfit', 'Inter', sans-serif; background-color: #0b0d1b; color: #f3f4f6;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0b0d1b; min-width: 100%;">
+                <tr>
+                    <td align="center" style="padding: 40px 10px;">
+                        <div style="max-width: 500px; width: 100%; background-color: #11132c; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); overflow: hidden; padding: 40px 32px; box-sizing: border-box; text-align: center;">
+                            <div style="margin-bottom: 24px; text-align: center;">
+                                <span style="font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; font-family: 'Outfit', sans-serif;">MBAssist <span style="color: #6366f1;">AI</span></span>
+                            </div>
+                            
+                            <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 12px; font-family: 'Outfit', sans-serif; text-align: center;">Confirm Your Registration</h2>
+                            <p style="font-size: 13.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 28px; font-family: 'Inter', sans-serif; text-align: center; margin-top: 0; padding: 0 10px;">
+                                Thank you for signing up for the MBAssist AI admissions guide! Enter the 6-digit verification code below to secure your chat history and unlock your dashboard.
+                            </p>
+                            
+                            <div style="background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 20px 30px; margin-bottom: 28px; display: inline-block; box-shadow: 0 0 15px rgba(99, 102, 241, 0.05); text-align: center;">
+                                <span style="font-size: 36px; font-weight: 800; color: #6366f1; letter-spacing: 6px; padding-left: 6px; font-family: monospace;">{otp_code}</span>
+                            </div>
+                            
+                            <p style="font-size: 11.5px; color: #6b7280; line-height: 1.4; margin-bottom: 32px; font-family: 'Inter', sans-serif; text-align: center; padding: 0 20px; margin-top: 0;">
+                                This code is valid for a limited time. If you did not initiate this request, you can safely ignore this email.
+                            </p>
+                            
+                            <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; font-size: 10.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.5; text-align: center;">
+                                Mar Baselios College of Engineering and Technology Admissions Guide<br>
+                                <span style="color: #6366f1;">mbcet.ac.in</span>
+                                <div style="margin-top: 12px; font-size: 9px; color: #374151;">Ref ID: {int(time.time())}</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </body>
         </html>
         """
@@ -99,9 +107,151 @@ def send_otp_email(receiver_email, otp_code):
         server.sendmail(sender_email, receiver_email, msg.as_string())
         server.quit()
         print(f"[EMAIL] Verification email successfully sent to {receiver_email}", file=sys.stderr)
+        return True
     except Exception as e:
         print(f"[ERROR] Failed to send SMTP email: {str(e)}. Falling back to console OTP.", file=sys.stderr)
         print(f"[OTP VERIFICATION] Code for {receiver_email}: {otp_code}", file=sys.stderr)
+        return False
+
+# Temporary in-memory store for password reset OTPs
+temp_reset_otps = {}
+
+def send_reset_otp_email(receiver_email, otp_code):
+    """Send an account password reset email containing the 6-digit OTP."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    sender_email = os.getenv("SMTP_EMAIL")
+    sender_password = os.getenv("SMTP_PASSWORD")
+    smtp_server = os.getenv("SMTP_HOST")
+    smtp_port = os.getenv("SMTP_PORT")
+    
+    # Fallback checks
+    if not all([sender_email, sender_password, smtp_server, smtp_port]):
+        print("\n" + "!" * 60, file=sys.stderr)
+        print("[WARN] SMTP Credentials Missing in .env. Falling back to console OTP log for Reset.", file=sys.stderr)
+        print(f"[PASSWORD RESET OTP] Code for {receiver_email}: {otp_code}", file=sys.stderr)
+        print("!" * 60 + "\n", file=sys.stderr)
+        return False
+        
+    try:
+        # Build SMTP MIME message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg['Subject'] = "Reset Your MBAssist AI Password"
+        
+        html_content = f"""
+        <html>
+        <body style="margin: 0; padding: 0; font-family: 'Outfit', 'Inter', sans-serif; background-color: #0b0d1b; color: #f3f4f6;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0b0d1b; min-width: 100%;">
+                <tr>
+                    <td align="center" style="padding: 40px 10px;">
+                        <div style="max-width: 500px; width: 100%; background-color: #11132c; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); overflow: hidden; padding: 40px 32px; box-sizing: border-box; text-align: center;">
+                            <div style="margin-bottom: 24px; text-align: center;">
+                                <span style="font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; font-family: 'Outfit', sans-serif;">MBAssist <span style="color: #6366f1;">AI</span></span>
+                            </div>
+                            
+                            <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 12px; font-family: 'Outfit', sans-serif; text-align: center;">Password Reset Request</h2>
+                            <p style="font-size: 13.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 28px; font-family: 'Inter', sans-serif; text-align: center; margin-top: 0; padding: 0 10px;">
+                                We received a request to reset the password for your MBAssist AI account. Enter the 6-digit verification code below to authorize this password reset:
+                            </p>
+                            
+                            <div style="background: rgba(239, 68, 68, 0.15); border: 1px dashed rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 20px 30px; margin-bottom: 28px; display: inline-block; box-shadow: 0 0 15px rgba(239, 68, 68, 0.05); text-align: center;">
+                                <span style="font-size: 36px; font-weight: 800; color: #ef4444; letter-spacing: 6px; padding-left: 6px; font-family: monospace;">{otp_code}</span>
+                            </div>
+                            
+                            <p style="font-size: 11.5px; color: #6b7280; line-height: 1.4; margin-bottom: 32px; font-family: 'Inter', sans-serif; text-align: center; padding: 0 20px; margin-top: 0;">
+                                If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
+                            </p>
+                            
+                            <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; font-size: 10.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.5; text-align: center;">
+                                Mar Baselios College of Engineering and Technology Admissions Guide<br>
+                                <span style="color: #6366f1;">mbcet.ac.in</span>
+                                <div style="margin-top: 12px; font-size: 9px; color: #374151;">Ref ID: {int(time.time())}</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        # Connect and send via SSL or STARTTLS depending on port
+        port = int(smtp_port)
+        if port == 465:
+            server = smtplib.SMTP_SSL(smtp_server, port)
+        else:
+            server = smtplib.SMTP(smtp_server, port)
+            server.starttls()
+            
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+        server.quit()
+        print(f"[EMAIL] Password reset email sent to {receiver_email}", file=sys.stderr)
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to send Reset SMTP email: {str(e)}. Falling back to console OTP.", file=sys.stderr)
+        print(f"[PASSWORD RESET OTP] Code for {receiver_email}: {otp_code}", file=sys.stderr)
+        return False
+
+@app.route("/api/auth/forgot-password", methods=["POST"])
+def auth_forgot_password():
+    """Generate OTP and send email for resetting password."""
+    try:
+        data = request.get_json() or {}
+        email = data.get("email", "").strip().lower()
+        
+        if not email:
+            return jsonify({"error": "Email address is required."}), 400
+            
+        # Check if user exists
+        conn = get_db_connection()
+        user = conn.execute("SELECT user_id FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+        if not user:
+            return jsonify({"error": "No account found with this email address."}), 404
+            
+        otp = f"{random.randint(100000, 999999)}"
+        temp_reset_otps[email] = {
+            "otp": otp,
+            "timestamp": time.time()
+        }
+        
+        email_sent = send_reset_otp_email(email, otp)
+        return jsonify({"success": "Password reset code sent.", "email": email, "email_sent": email_sent})
+    except Exception as e:
+        print(f"[ERROR] Forgot password failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Failed to send reset code: {str(e)}"}), 500
+
+@app.route("/api/auth/reset-password", methods=["POST"])
+def auth_reset_password():
+    """Verify reset OTP and write new password to SQLite."""
+    try:
+        data = request.get_json() or {}
+        email = data.get("email", "").strip().lower()
+        otp = data.get("otp", "").strip()
+        new_password = data.get("new_password", "").strip()
+        
+        if not email or not otp or not new_password:
+            return jsonify({"error": "All fields are required."}), 400
+            
+        record = temp_reset_otps.get(email)
+        if not record or record["otp"] != otp:
+            return jsonify({"error": "Invalid or expired password reset verification code."}), 400
+            
+        # Reset successful: write to SQLite
+        update_user_password(email, new_password)
+        
+        # Cleanup reset record
+        temp_reset_otps.pop(email, None)
+        return jsonify({"success": "Password has been successfully updated. You can now log in."})
+    except Exception as e:
+        print(f"[ERROR] Password reset verification failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Failed to reset password: {str(e)}"}), 500
 
 @app.route("/")
 def home():
@@ -144,9 +294,9 @@ def auth_register():
         }
 
         # Send actual SMTP email or print console fallback
-        send_otp_email(email, otp_code)
+        email_sent = send_otp_email(email, otp_code)
 
-        return jsonify({"otp_required": True, "email": email})
+        return jsonify({"otp_required": True, "email": email, "email_sent": email_sent})
     except Exception as e:
         print(f"[ERROR] Registration flow failed: {str(e)}", file=sys.stderr)
         return jsonify({"error": f"Registration failed: {str(e)}"}), 500
@@ -179,6 +329,32 @@ def auth_verify_otp():
     except Exception as e:
         print(f"[ERROR] OTP Verification failed: {str(e)}", file=sys.stderr)
         return jsonify({"error": f"Verification failed: {str(e)}"}), 500
+
+@app.route("/api/auth/resend-otp", methods=["POST"])
+def auth_resend_otp():
+    """Generate a new OTP and resend it to the user's email."""
+    try:
+        data = request.get_json() or {}
+        email = data.get("email", "").strip().lower()
+
+        if not email:
+            return jsonify({"error": "Email address is required."}), 400
+
+        otp_record = temp_otps.get(email)
+        if not otp_record:
+            return jsonify({"error": "Verification request has expired or was not initiated."}), 400
+
+        # Generate a fresh 6-digit OTP
+        new_otp = f"{random.randint(100000, 999999)}"
+        otp_record["otp"] = new_otp
+        otp_record["timestamp"] = time.time()
+
+        # Send SMTP HTML email
+        email_sent = send_otp_email(email, new_otp)
+        return jsonify({"success": "Verification code resent successfully.", "email_sent": email_sent})
+    except Exception as e:
+        print(f"[ERROR] OTP Resend failed: {str(e)}", file=sys.stderr)
+        return jsonify({"error": f"Resend failed: {str(e)}"}), 500
 
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
