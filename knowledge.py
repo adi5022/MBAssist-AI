@@ -167,8 +167,42 @@ def chunk_web_pages(pages: list[dict], size: int = CHUNK_SIZE,
     print(f"[OK] Created {len(chunks):,} web chunks (size={size}, step={step})")
     return chunks, meta
 
+def extract_syllabus_chunks(size: int = CHUNK_SIZE, step: int = CHUNK_STEP) -> tuple[list[str], list[dict]]:
+    """Scan data/syllabus directory and extract chunked text from all PDFs."""
+    chunks, meta = [], []
+    syllabus_dir = Path("data/syllabus")
+    if not syllabus_dir.exists():
+        syllabus_dir = Path(__file__).resolve().parent / "data" / "syllabus"
+        
+    if syllabus_dir.exists() and syllabus_dir.is_dir():
+        print(f"[BUILD] Scanning syllabus directory: {syllabus_dir.name}...")
+        for pdf_file in syllabus_dir.glob("*.pdf"):
+            print(f"[BUILD] Extracting text from syllabus: {pdf_file.name}...")
+            try:
+                doc = fitz.open(str(pdf_file))
+                base_name = pdf_file.stem
+                display_name = base_name.replace('_', ' ').replace('-', ' ').title()
+                
+                for i, page in enumerate(doc):
+                    text = page.get_text("text").strip()
+                    if text:
+                        words = text.split()
+                        for idx in range(0, len(words), step):
+                            chunk = " ".join(words[idx : idx + size])
+                            if len(chunk.strip()) < 60:
+                                continue
+                            chunks.append(f"Syllabus Content for {display_name} (Page {i+1}):\n\n{chunk}")
+                            meta.append({
+                                "page": f"Syllabus: {display_name} (P.{i+1})",
+                                "offset": idx
+                            })
+                doc.close()
+            except Exception as e:
+                print(f"[WARN] Failed to process syllabus PDF {pdf_file.name}: {e}")
+    return chunks, meta
+
 def rebuild_unified_index(crawled_pages: list[dict]):
-    """Rebuilds the hybrid FAISS index combining PDF prospectus and crawled web pages."""
+    """Rebuilds the hybrid FAISS index combining PDF prospectus, web pages, and syllabus PDFs."""
     global _vector_store
     pdf_chunks, pdf_meta = [], []
     if PDF_PATH.exists():
@@ -179,22 +213,16 @@ def rebuild_unified_index(crawled_pages: list[dict]):
         print(f"[WARN] Admissions prospectus PDF not found at {PDF_PATH.absolute()}")
         
     web_chunks, web_meta = chunk_web_pages(crawled_pages)
+    syl_chunks, syl_meta = extract_syllabus_chunks()
     
-    all_chunks = pdf_chunks + web_chunks
-    all_meta = pdf_meta + web_meta
+    all_chunks = pdf_chunks + web_chunks + syl_chunks
+    all_meta = pdf_meta + web_meta + syl_meta
     
     if not all_chunks:
-        raise ValueError("No text extracted from PDF or web pages. Cannot build index.")
+        raise ValueError("No text extracted from PDF, web, or syllabus pages. Cannot build index.")
         
     print(f"[BUILD] Rebuilding unified FAISS store with {len(all_chunks)} chunks...")
     
-    # Clean cache file if it exists to ensure rebuild from scratch
-    if CACHE_FILE.exists():
-        try:
-            CACHE_FILE.unlink()
-        except Exception as e:
-            print(f"[WARN] Failed to delete cache file before rebuild: {e}")
-
     _vector_store = FAISSStore(all_chunks, all_meta, cache=CACHE_FILE)
     return _vector_store
 
@@ -218,6 +246,12 @@ def get_vector_store():
         print(f"[BUILD] Building vector index from prospectus {PDF_PATH.name}...")
         pages = extract_pdf_text(PDF_PATH)
         chunks, meta = chunk_pages(pages)
+        
+        # Load syllabus chunks if available
+        syl_chunks, syl_meta = extract_syllabus_chunks()
+        chunks += syl_chunks
+        meta += syl_meta
+        
         _vector_store = FAISSStore(chunks, meta, cache=CACHE_FILE)
         
     return _vector_store

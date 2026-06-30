@@ -18,6 +18,7 @@ class ChatState(BaseModel):
     api_key:     Optional[str]  = None
     history:     Optional[list] = None
     summary:     Optional[str]  = None
+    model:       Optional[str]  = None
 
 def detect_language(text: str) -> tuple[str, str]:
     """Returns (lang_code, lang_name)."""
@@ -40,10 +41,10 @@ def node_planner(state: ChatState) -> ChatState:
         f"User question (may be in {state.lang_name}): {state.query}\n\n"
         "Route this: reply ONLY with 'retrieve' or 'answer_direct'."
     )
-    llm = get_llm(state.api_key)
+    llm = get_llm(state.api_key, state.model)
     decision = llm.chat(PLANNER_SYS, routing_prompt, max_tokens=8)
     state.action = "retrieve" if "retrieve" in decision.lower() else "answer_direct"
-    print(f"  [planner]   {state.action}")
+    print(f"  [planner]   {state.action} (model: {state.model or 'default'})")
     return state
 
 def node_retrieve(state: ChatState) -> ChatState:
@@ -61,7 +62,7 @@ def node_answer(state: ChatState) -> ChatState:
         lang_name=state.lang_name, lang_code=state.lang_code
     )
 
-    llm = get_llm(state.api_key)
+    llm = get_llm(state.api_key, state.model)
     
     # Prefix chat memory history if present
     history_str = ""
@@ -118,10 +119,10 @@ def node_verifier(state: ChatState) -> ChatState:
         f"Draft Answer:\n{state.answer}"
     )
     
-    llm = get_llm(state.api_key)
+    llm = get_llm(state.api_key, state.model)
     verified_answer = llm.chat(CRITIQUE_SYS, critique_prompt, max_tokens=700)
     state.answer = verified_answer
-    print("  [verifier]  Audited and finalized response.")
+    print(f"  [verifier]  Audited and finalized response (model: {state.model or 'default'}).")
     return state
 
 # ─── StateGraph Build ──────────────────────────────────────────
@@ -148,12 +149,13 @@ graph.add_edge("verifier",  END)
 graph_app = graph.compile()
 print("[OK] LangGraph workflow compiled for MBCET Chatbot")
 
-def ask_chatbot(question: str, api_key: str = None, history: list = None, summary: str = None) -> dict:
-    """Run the RAG pipeline with user api_key, chat memory history, and conversation summary."""
+def ask_chatbot(question: str, api_key: str = None, history: list = None, summary: str = None, model: str = None) -> dict:
+    """Run the RAG pipeline with user api_key, chat memory history, conversation summary, and custom model."""
     result = graph_app.invoke({
         "query": question,
         "api_key": api_key,
         "history": history,
-        "summary": summary
+        "summary": summary,
+        "model": model
     })
     return result

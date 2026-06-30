@@ -164,6 +164,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         isUrl = true;
                         hrefTarget = pStr;
                         displayLabel = "Web Source";
+                    } else if (pStr.startsWith("Syllabus: ")) {
+                        displayLabel = pStr;
                     }
                     
                     const badge = document.createElement(isUrl ? "a" : "span");
