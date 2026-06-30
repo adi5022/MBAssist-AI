@@ -680,10 +680,12 @@ document.addEventListener("DOMContentLoaded", () => {
         })();
 
         try {
+            const selectedModelVal = document.getElementById("selected-model-val").value;
             const payload = {
                 message: query,
                 user_id: currentUser ? currentUser.user_id : null,
-                session_id: activeSessionId
+                session_id: activeSessionId,
+                model: selectedModelVal
             };
             
             const response = await fetch("/api/chat", {
@@ -1203,6 +1205,100 @@ document.addEventListener("DOMContentLoaded", () => {
             renderHistoryList();
         }
     };
+
+    // Custom Model Selector dropdown interaction logic
+    const modelTrigger = document.getElementById("model-dropdown-trigger");
+    const modelDropdownList = document.getElementById("model-dropdown-list");
+    const selectedModelName = document.getElementById("selected-model-name");
+    const selectedModelVal = document.getElementById("selected-model-val");
+    const modelOptions = document.querySelectorAll(".model-option");
+
+    if (modelTrigger && modelDropdownList) {
+        modelTrigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = modelDropdownList.style.display === "flex";
+            modelDropdownList.style.display = isOpen ? "none" : "flex";
+        });
+
+        document.addEventListener("click", () => {
+            modelDropdownList.style.display = "none";
+        });
+
+        modelOptions.forEach(opt => {
+            opt.addEventListener("click", () => {
+                const val = opt.getAttribute("data-value");
+                const name = opt.querySelector(".model-option-name").textContent;
+                
+                selectedModelVal.value = val;
+                selectedModelName.textContent = name;
+                
+                // Update active class
+                modelOptions.forEach(o => o.classList.remove("active"));
+                opt.classList.add("active");
+                
+                showToast(`Switched model to ${name}`, "🤖");
+            });
+        });
+    }
+
+    // Export Conversation transcript
+    const exportChatBtn = document.getElementById("export-chat-btn");
+    const downloadTxtFile = (text, filename) => {
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Transcript exported successfully!", "📥");
+    };
+
+    if (exportChatBtn) {
+        exportChatBtn.addEventListener("click", () => {
+            const chatMessagesDiv = document.getElementById("chat-messages");
+            const messageRows = chatMessagesDiv.querySelectorAll(".chat-message-row");
+            
+            if (messageRows.length === 0) {
+                showToast("No messages to export.", "⚠️");
+                return;
+            }
+
+            let text = "==================================================\n";
+            text += "   MBAssist AI Chatbot - Admissions Inquiry Logs\n";
+            text += `   Date: ${new Date().toLocaleString()}\n`;
+            text += "==================================================\n\n";
+
+            // If we have an active session from SQL, prepend details
+            if (activeSessionId) {
+                const currentSession = sessions.find(s => s.id === activeSessionId);
+                if (currentSession) {
+                    text += `Session Title: ${currentSession.title}\n`;
+                    text += `Session ID: ${activeSessionId}\n\n`;
+                }
+            }
+
+            messageRows.forEach(row => {
+                const isUser = row.classList.contains("user-row");
+                const sender = isUser ? "User" : "MBAssist AI";
+                const contentDiv = row.querySelector(".message-content");
+                if (contentDiv) {
+                    // Extract text (preserving spacing/formatting from DOM)
+                    const contentText = contentDiv.innerText.trim();
+                    text += `[${sender}]\n${contentText}\n\n`;
+                }
+            });
+
+            text += "==================================================\n";
+            text += "End of transcript. Thank you for using MBAssist AI!\n";
+            text += "==================================================\n";
+
+            const filename = `mbassist_transcript_${activeSessionId || 'guest'}.txt`;
+            downloadTxtFile(text, filename);
+        });
+    }
 
     checkAuth();
 });

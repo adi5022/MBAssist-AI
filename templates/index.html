@@ -173,6 +173,12 @@
                                             fill="currentColor" />
                                     </svg>
                                 </button>
+                                <button class="action-icon-btn subtle-btn" id="export-chat-btn"
+                                    title="Export Conversation Transcript">
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" fill="currentColor"/>
+                                    </svg>
+                                </button>
                                 <button class="action-icon-btn subtle-btn" id="clear-all-btn"
                                     title="Clear Chat History">
                                     <svg viewBox="0 0 24 24" width="16" height="16">
@@ -186,6 +192,57 @@
 
                         <!-- Chat Viewport -->
                         <div class="chat-container">
+                            <!-- Custom Model Selector dropdown -->
+                            <div class="model-selector-container">
+                                <button type="button" class="model-dropdown-trigger" id="model-dropdown-trigger">
+                                    <span class="model-icon">🤖</span>
+                                    <span id="selected-model-name">Llama 3.3 70B</span>
+                                    <span class="model-chevron">▼</span>
+                                </button>
+                                <div class="model-dropdown-list" id="model-dropdown-list" style="display: none;">
+                                    <div class="model-option active" data-value="llama-3.3-70b-versatile">
+                                        <div class="model-option-main">
+                                            <span class="model-option-name">Llama 3.3 70B</span>
+                                            <span class="intensity-badge intensity-medium">Medium</span>
+                                        </div>
+                                        <div class="model-tooltip">
+                                            <strong>Use Case:</strong> Complex reasoning, general inquiries, high-fidelity answers.<br>
+                                            <strong>Token Intensity:</strong> Moderate. Optimized for standard queries.
+                                        </div>
+                                    </div>
+                                    <div class="model-option" data-value="llama-3.1-8b-instant">
+                                        <div class="model-option-main">
+                                            <span class="model-option-name">Llama 3.1 8B</span>
+                                            <span class="intensity-badge intensity-low">Low</span>
+                                        </div>
+                                        <div class="model-tooltip">
+                                            <strong>Use Case:</strong> Fast/conversational responses, quick questions.<br>
+                                            <strong>Token Intensity:</strong> Extremely low. Highly resource efficient.
+                                        </div>
+                                    </div>
+                                    <div class="model-option" data-value="mixtral-8x7b-32768">
+                                        <div class="model-option-main">
+                                            <span class="model-option-name">Mixtral 8x7B</span>
+                                            <span class="intensity-badge intensity-high">High</span>
+                                        </div>
+                                        <div class="model-tooltip">
+                                            <strong>Use Case:</strong> Multi-lingual translation, very long conversations.<br>
+                                            <strong>Token Intensity:</strong> High. High context capability.
+                                        </div>
+                                    </div>
+                                    <div class="model-option" data-value="gemma2-9b-it">
+                                        <div class="model-option-main">
+                                            <span class="model-option-name">Gemma 2 9B</span>
+                                            <span class="intensity-badge intensity-medium">Medium</span>
+                                        </div>
+                                        <div class="model-tooltip">
+                                            <strong>Use Case:</strong> Creative replies, summaries, concise instructions.<br>
+                                            <strong>Token Intensity:</strong> Moderate. Well-balanced performance.
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="selected-model-val" value="llama-3.3-70b-versatile">
+                            </div>
                             <div class="chat-viewport" id="chat-viewport">
 
                                 <!-- Welcome / Inactive State -->
