@@ -31,6 +31,21 @@ app = Flask(__name__,
 # Temporary in-memory OTP verification store
 temp_otps = {}
 
+def validate_groq_key(api_key: str):
+    """Validate user-provided Groq API key by listing models."""
+    if not api_key:
+        return
+    from groq import Groq
+    try:
+        client = Groq(api_key=api_key.strip())
+        client.models.list()
+    except Exception as e:
+        # Extract clean error message details
+        err_msg = str(e)
+        if "Authentication" in err_msg or "401" in err_msg:
+            raise ValueError("Invalid credentials or key has expired.")
+        raise ValueError(f"Key validation failed: {err_msg}")
+
 def send_otp_email(receiver_email, otp_code):
     """Send an account verification email containing the 6-digit OTP."""
     import smtplib
@@ -273,6 +288,10 @@ def auth_register():
         groq_api_key = data.get("groq_api_key")
         if groq_api_key:
             groq_api_key = groq_api_key.strip()
+            try:
+                validate_groq_key(groq_api_key)
+            except ValueError as ve:
+                return jsonify({"error": f"Invalid Groq API Key: {str(ve)}"}), 400
 
         if not email or not password:
             return jsonify({"error": "Email and password are required fields."}), 400
@@ -386,6 +405,13 @@ def auth_save_key():
         if not user_id:
             return jsonify({"error": "User ID is required."}), 400
         
+        if groq_key:
+            groq_key = groq_key.strip()
+            try:
+                validate_groq_key(groq_key)
+            except ValueError as ve:
+                return jsonify({"error": f"Invalid Groq API Key: {str(ve)}"}), 400
+        
         update_user_api_key(user_id, groq_key)
         return jsonify({"success": "Groq API Key successfully updated."})
     except Exception as e:
@@ -452,8 +478,8 @@ def session_messages(session_id):
         print(f"[ERROR] Message log fetch failed: {str(e)}", file=sys.stderr)
         return jsonify({"error": "Failed to fetch messages."}), 500
 
-def generate_updated_summary(old_summary, older_messages, api_key=None):
-    """Generate an updated single-paragraph summary of older conversation history."""
+def generate_updated_summary(old_summary: str, older_messages: list, api_key: str = None, model: str = None) -> str:
+    """Trigger background LLM call to merge dialogue turns into the session summary."""
     try:
         from llm import get_llm
         dialogue = ""
@@ -471,7 +497,7 @@ def generate_updated_summary(old_summary, older_messages, api_key=None):
             "- Do not include greetings, introductions, or pleasantries.\n"
             "- Focus strictly on admissions context."
         )
-        llm = get_llm(api_key)
+        llm = get_llm(api_key, model=model)
         new_summary = llm.chat("You are a concise conversation summarization assistant.", prompt, max_tokens=150)
         return new_summary.strip()
     except Exception as e:
@@ -486,6 +512,7 @@ def chat():
         user_message = data.get("message", "").strip()
         user_id = data.get("user_id")
         session_id = data.get("session_id")
+        model = data.get("model")
 
         if not user_message:
             return jsonify({"error": "Message content cannot be empty."}), 400
@@ -510,7 +537,7 @@ def chat():
                 session_history = raw_history[-4:]
                 
                 # Update the running summary dynamically with older messages
-                session_summary = generate_updated_summary(session_summary, older_messages, api_key=user_api_key)
+                session_summary = generate_updated_summary(session_summary, older_messages, api_key=user_api_key, model=model)
                 update_session_summary(session_id, session_summary)
             else:
                 session_history = raw_history
@@ -518,7 +545,7 @@ def chat():
             save_message(session_id, "user", user_message)
 
         # Invoke the LangGraph workflow pipeline
-        result = ask_chatbot(user_message, api_key=user_api_key, history=session_history, summary=session_summary)
+        result = ask_chatbot(user_message, api_key=user_api_key, history=session_history, summary=session_summary, model=model)
         answer = result.get("answer", "No answer was generated.")
 
         # Save assistant response to session log if session is active
@@ -549,7 +576,12 @@ def chat():
 
     except Exception as e:
         print(f"[ERROR] Error in /api/chat: {str(e)}", file=sys.stderr)
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+        err_msg = str(e)
+        if "Authentication" in err_msg or "unauthorized" in err_msg.lower() or "401" in err_msg:
+            return jsonify({"error": "Unauthorized access. The provided custom Groq API key is invalid or expired. Please update it in your Account Settings."}), 401
+        elif "429" in err_msg or "rate limit" in err_msg.lower():
+            return jsonify({"error": "Rate limit exceeded. The Groq API Key has reached its rate limit. Please wait a moment or update your key."}), 429
+        return jsonify({"error": f"An error occurred: {err_msg}"}), 500
 
 @app.route("/api/transcribe", methods=["POST"])
 def transcribe():
