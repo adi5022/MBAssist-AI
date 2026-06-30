@@ -151,9 +151,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 const uniquePages = [...new Set(pages)];
                 uniquePages.forEach(pNum => {
-                    const badge = document.createElement("span");
+                    let isUrl = false;
+                    let displayLabel = `Page ${pNum}`;
+                    let hrefTarget = null;
+                    
+                    const pStr = String(pNum).trim();
+                    if (pStr.startsWith("URL: ")) {
+                        isUrl = true;
+                        hrefTarget = pStr.substring(5).trim();
+                        displayLabel = "Web Source";
+                    } else if (pStr.startsWith("http://") || pStr.startsWith("https://")) {
+                        isUrl = true;
+                        hrefTarget = pStr;
+                        displayLabel = "Web Source";
+                    }
+                    
+                    const badge = document.createElement(isUrl ? "a" : "span");
                     badge.className = "source-badge";
-                    badge.textContent = `Page ${pNum}`;
+                    if (isUrl) {
+                        badge.href = hrefTarget;
+                        badge.target = "_blank";
+                        badge.rel = "noopener noreferrer";
+                        badge.style.cursor = "pointer";
+                        badge.style.textDecoration = "none";
+                    }
+                    badge.textContent = displayLabel;
                     badgeContainer.appendChild(badge);
                 });
                 content.appendChild(badgeContainer);

@@ -530,12 +530,21 @@ def chat():
         if result.get("action") == "retrieve" and result.get("docs"):
             pages = [doc.get("page") for doc in result.get("docs") if doc.get("page")]
         
+        # Sort key to handle mixed types (integers vs strings/URLs) safely
+        def sort_key(val):
+            try:
+                # If it's numeric, sort it first as a number
+                return (0, int(val))
+            except (ValueError, TypeError):
+                # Otherwise sort alphabetically as a string
+                return (1, str(val))
+
         return jsonify({
             "answer": answer,
             "action": result.get("action"),
             "lang_code": result.get("lang_code"),
             "lang_name": result.get("lang_name"),
-            "pages": sorted(list(set(pages)))
+            "pages": sorted(list(set(pages)), key=sort_key)
         })
 
     except Exception as e:

@@ -100,7 +100,19 @@ def node_verifier(state: ChatState) -> ChatState:
     else:
         passages = "No prospectus context was retrieved (direct answer)."
     
+    # Prefix chat memory history if present
+    history_str = ""
+    if state.summary:
+        history_str += f"Summary of previous conversation:\n{state.summary}\n\n"
+    if state.history:
+        history_str += "Recent conversation history:\n"
+        for msg in state.history:
+            role_name = "User" if msg.get('sender') == 'user' else "Assistant"
+            history_str += f"{role_name}: {msg.get('text')}\n"
+        history_str += "\n"
+
     critique_prompt = (
+        f"Conversation History:\n{history_str or 'None'}\n\n"
         f"Prospectus Context:\n{passages}\n\n"
         f"User Query: {state.query}\n\n"
         f"Draft Answer:\n{state.answer}"

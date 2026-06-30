@@ -150,6 +150,54 @@ class FAISSStore:
             for idx, rrf_score in sorted_candidates
         ]
 
+def chunk_web_pages(pages: list[dict], size: int = CHUNK_SIZE,
+                    step: int = CHUNK_STEP) -> tuple[list[str], list[dict]]:
+    """Sliding-window word chunker for web pages. Returns (chunks, metadata)."""
+    chunks, meta = [], []
+    for page_info in pages:
+        words = page_info["text"].split()
+        url = page_info["url"]
+        title = page_info.get("title", "Web Page")
+        for i in range(0, len(words), step):
+            chunk = " ".join(words[i : i + size])
+            if len(chunk.strip()) < 60:
+                continue
+            chunks.append(chunk)
+            meta.append({"page": f"URL: {url}", "offset": i, "title": title})
+    print(f"[OK] Created {len(chunks):,} web chunks (size={size}, step={step})")
+    return chunks, meta
+
+def rebuild_unified_index(crawled_pages: list[dict]):
+    """Rebuilds the hybrid FAISS index combining PDF prospectus and crawled web pages."""
+    global _vector_store
+    pdf_chunks, pdf_meta = [], []
+    if PDF_PATH.exists():
+        print(f"[BUILD] Extracting text from prospectus {PDF_PATH.name}...")
+        pdf_pages = extract_pdf_text(PDF_PATH)
+        pdf_chunks, pdf_meta = chunk_pages(pdf_pages)
+    else:
+        print(f"[WARN] Admissions prospectus PDF not found at {PDF_PATH.absolute()}")
+        
+    web_chunks, web_meta = chunk_web_pages(crawled_pages)
+    
+    all_chunks = pdf_chunks + web_chunks
+    all_meta = pdf_meta + web_meta
+    
+    if not all_chunks:
+        raise ValueError("No text extracted from PDF or web pages. Cannot build index.")
+        
+    print(f"[BUILD] Rebuilding unified FAISS store with {len(all_chunks)} chunks...")
+    
+    # Clean cache file if it exists to ensure rebuild from scratch
+    if CACHE_FILE.exists():
+        try:
+            CACHE_FILE.unlink()
+        except Exception as e:
+            print(f"[WARN] Failed to delete cache file before rebuild: {e}")
+
+    _vector_store = FAISSStore(all_chunks, all_meta, cache=CACHE_FILE)
+    return _vector_store
+
 # Global singleton or helper to get the initialized vector store
 _vector_store = None
 
