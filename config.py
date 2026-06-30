@@ -1,4 +1,8 @@
 import os
+# Force offline mode for Hugging Face to prevent online version checks from hanging
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -23,6 +27,9 @@ CHUNK_SIZE = 350    # words per chunk
 CHUNK_STEP = 150    # stride (overlap ~57 %)
 EMBED_DIM = 256     # LSA dimensions
 TOP_K = 5           # passages per query
+
+# Security token for triggering manual rebuilds
+ADMIN_REBUILD_TOKEN = os.environ.get("ADMIN_REBUILD_TOKEN", "default_secret_token_123")
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")

@@ -677,6 +677,20 @@ threading.Thread(target=run_weekly_scheduler, daemon=True).start()
 @app.route("/api/admin/rebuild-index", methods=["POST"])
 def api_rebuild_index():
     """Trigger manual index rebuild in a background thread to prevent API timeout."""
+    from config import ADMIN_REBUILD_TOKEN
+    
+    # Simple header verification
+    auth_header = request.headers.get("Authorization")
+    token = None
+    if auth_header:
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+        else:
+            token = auth_header
+            
+    if not token or token != ADMIN_REBUILD_TOKEN:
+        return jsonify({"error": "Unauthorized. Invalid or missing administrator token."}), 401
+
     global is_rebuilding
     with rebuild_lock:
         if is_rebuilding:
@@ -687,10 +701,17 @@ def api_rebuild_index():
     return jsonify({"success": "Web scraper and index rebuild started in the background."})
 
 def check_files():
-    """Verify at startup that data or cache dependencies are in place."""
+    """Verify at startup that data or cache dependencies are in place and eager-load the vector store."""
     print("*" * 60)
     if CACHE_FILE.exists():
         print(f"[OK] Found FAISS cache index: {CACHE_FILE.name}")
+        print("[INFO] Eager loading vector store and SentenceTransformer in background/startup...")
+        try:
+            from knowledge import get_vector_store
+            get_vector_store()
+            print("[OK] Vector store loaded in memory and ready.")
+        except Exception as e:
+            print(f"[WARN] Failed eager loading vector store: {e}")
     elif PDF_PATH.exists():
         print(f"[OK] Found admissions prospectus: {PDF_PATH.name}")
         print("   The FAISS index will be built from scratch on the first query.")
