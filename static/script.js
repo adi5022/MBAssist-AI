@@ -194,6 +194,62 @@ document.addEventListener("DOMContentLoaded", () => {
         scrollToBottom();
     };
 
+    const appendErrorMessageWithRetry = (errorText, failedQuery) => {
+        if (welcomeScreen.style.display !== "none") {
+            welcomeScreen.style.display = "none";
+            chatMessages.style.display = "flex";
+        }
+
+        const messageRow = document.createElement("div");
+        messageRow.className = "chat-message-row system-row error-row";
+
+        const avatar = document.createElement("div");
+        avatar.className = "message-avatar";
+        avatar.textContent = "⚠️";
+
+        const content = document.createElement("div");
+        content.className = "message-content error-content";
+        
+        const p = document.createElement("p");
+        p.textContent = errorText;
+        content.appendChild(p);
+
+        // Add Retry Button
+        const retryBtn = document.createElement("button");
+        retryBtn.type = "button";
+        retryBtn.className = "error-retry-btn";
+        retryBtn.textContent = "🔄 Retry Query";
+        retryBtn.style.marginTop = "8px";
+        retryBtn.style.padding = "4px 10px";
+        retryBtn.style.fontSize = "11px";
+        retryBtn.style.borderRadius = "6px";
+        retryBtn.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+        retryBtn.style.background = "rgba(239, 68, 68, 0.08)";
+        retryBtn.style.color = "#ef4444";
+        retryBtn.style.cursor = "pointer";
+        retryBtn.style.fontWeight = "600";
+        retryBtn.style.transition = "all 0.15s ease";
+
+        retryBtn.addEventListener("mouseover", () => {
+            retryBtn.style.background = "rgba(239, 68, 68, 0.15)";
+        });
+        retryBtn.addEventListener("mouseout", () => {
+            retryBtn.style.background = "rgba(239, 68, 68, 0.08)";
+        });
+
+        retryBtn.addEventListener("click", () => {
+            messageRow.remove();
+            chatInput.value = failedQuery;
+            chatForm.dispatchEvent(new Event("submit"));
+        });
+
+        content.appendChild(retryBtn);
+        messageRow.appendChild(avatar);
+        messageRow.appendChild(content);
+        chatMessages.appendChild(messageRow);
+        scrollToBottom();
+    };
+
     // Load messages or fetch from server if logged in
     const loadSession = async (sessionId) => {
         activeSessionId = sessionId;
@@ -688,19 +744,46 @@ document.addEventListener("DOMContentLoaded", () => {
                 model: selectedModelVal
             };
             
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
+            let response = null;
+            let retries = 2; // Try up to 2 additional times (3 total attempts)
+            let success = false;
+            let lastError = null;
+
+            while (retries >= 0 && !success) {
+                try {
+                    response = await fetch("/api/chat", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        success = true;
+                    } else {
+                        const err = await response.json().catch(() => ({}));
+                        lastError = new Error(err.error || "Server failed to respond.");
+                        retries--;
+                        if (retries >= 0) {
+                            console.warn(`Chat request failed. Retrying in 1s... (${2 - retries} of 2)`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                } catch (err) {
+                    lastError = err;
+                    retries--;
+                    if (retries >= 0) {
+                        console.warn(`Chat request exception. Retrying in 1s... (${2 - retries} of 2)`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
 
             typingIndicator.remove();
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || "Server failed to respond.");
+            if (!success) {
+                throw lastError || new Error("Failed after maximum retries.");
             }
 
             const data = await response.json();
@@ -720,7 +803,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             if (typingIndicator) typingIndicator.remove();
-            appendMessage(`⚠️ Error: ${error.message}. Please check your connection and key.`, false);
+            appendErrorMessageWithRetry(`⚠️ Error: ${error.message}. Please check your connection and key.`, query);
         } finally {
             chatInput.disabled = false;
             sendButton.disabled = false;
