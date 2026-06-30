@@ -194,6 +194,62 @@ document.addEventListener("DOMContentLoaded", () => {
         scrollToBottom();
     };
 
+    const appendErrorMessageWithRetry = (errorText, failedQuery) => {
+        if (welcomeScreen.style.display !== "none") {
+            welcomeScreen.style.display = "none";
+            chatMessages.style.display = "flex";
+        }
+
+        const messageRow = document.createElement("div");
+        messageRow.className = "chat-message-row system-row error-row";
+
+        const avatar = document.createElement("div");
+        avatar.className = "message-avatar";
+        avatar.textContent = "⚠️";
+
+        const content = document.createElement("div");
+        content.className = "message-content error-content";
+        
+        const p = document.createElement("p");
+        p.textContent = errorText;
+        content.appendChild(p);
+
+        // Add Retry Button
+        const retryBtn = document.createElement("button");
+        retryBtn.type = "button";
+        retryBtn.className = "error-retry-btn";
+        retryBtn.textContent = "🔄 Retry Query";
+        retryBtn.style.marginTop = "8px";
+        retryBtn.style.padding = "4px 10px";
+        retryBtn.style.fontSize = "11px";
+        retryBtn.style.borderRadius = "6px";
+        retryBtn.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+        retryBtn.style.background = "rgba(239, 68, 68, 0.08)";
+        retryBtn.style.color = "#ef4444";
+        retryBtn.style.cursor = "pointer";
+        retryBtn.style.fontWeight = "600";
+        retryBtn.style.transition = "all 0.15s ease";
+
+        retryBtn.addEventListener("mouseover", () => {
+            retryBtn.style.background = "rgba(239, 68, 68, 0.15)";
+        });
+        retryBtn.addEventListener("mouseout", () => {
+            retryBtn.style.background = "rgba(239, 68, 68, 0.08)";
+        });
+
+        retryBtn.addEventListener("click", () => {
+            messageRow.remove();
+            chatInput.value = failedQuery;
+            chatForm.dispatchEvent(new Event("submit"));
+        });
+
+        content.appendChild(retryBtn);
+        messageRow.appendChild(avatar);
+        messageRow.appendChild(content);
+        chatMessages.appendChild(messageRow);
+        scrollToBottom();
+    };
+
     // Load messages or fetch from server if logged in
     const loadSession = async (sessionId) => {
         activeSessionId = sessionId;
@@ -680,25 +736,54 @@ document.addEventListener("DOMContentLoaded", () => {
         })();
 
         try {
+            const selectedModelVal = document.getElementById("selected-model-val").value;
             const payload = {
                 message: query,
                 user_id: currentUser ? currentUser.user_id : null,
-                session_id: activeSessionId
+                session_id: activeSessionId,
+                model: selectedModelVal
             };
             
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
+            let response = null;
+            let retries = 2; // Try up to 2 additional times (3 total attempts)
+            let success = false;
+            let lastError = null;
+
+            while (retries >= 0 && !success) {
+                try {
+                    response = await fetch("/api/chat", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        success = true;
+                    } else {
+                        const err = await response.json().catch(() => ({}));
+                        lastError = new Error(err.error || "Server failed to respond.");
+                        retries--;
+                        if (retries >= 0) {
+                            console.warn(`Chat request failed. Retrying in 1s... (${2 - retries} of 2)`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                } catch (err) {
+                    lastError = err;
+                    retries--;
+                    if (retries >= 0) {
+                        console.warn(`Chat request exception. Retrying in 1s... (${2 - retries} of 2)`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
 
             typingIndicator.remove();
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || "Server failed to respond.");
+            if (!success) {
+                throw lastError || new Error("Failed after maximum retries.");
             }
 
             const data = await response.json();
@@ -718,7 +803,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             if (typingIndicator) typingIndicator.remove();
-            appendMessage(`⚠️ Error: ${error.message}. Please check your connection and key.`, false);
+            appendErrorMessageWithRetry(`⚠️ Error: ${error.message}. Please check your connection and key.`, query);
         } finally {
             chatInput.disabled = false;
             sendButton.disabled = false;
@@ -1203,6 +1288,100 @@ document.addEventListener("DOMContentLoaded", () => {
             renderHistoryList();
         }
     };
+
+    // Custom Model Selector dropdown interaction logic
+    const modelTrigger = document.getElementById("model-dropdown-trigger");
+    const modelDropdownList = document.getElementById("model-dropdown-list");
+    const selectedModelName = document.getElementById("selected-model-name");
+    const selectedModelVal = document.getElementById("selected-model-val");
+    const modelOptions = document.querySelectorAll(".model-option");
+
+    if (modelTrigger && modelDropdownList) {
+        modelTrigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = modelDropdownList.style.display === "flex";
+            modelDropdownList.style.display = isOpen ? "none" : "flex";
+        });
+
+        document.addEventListener("click", () => {
+            modelDropdownList.style.display = "none";
+        });
+
+        modelOptions.forEach(opt => {
+            opt.addEventListener("click", () => {
+                const val = opt.getAttribute("data-value");
+                const name = opt.querySelector(".model-option-name").textContent;
+                
+                selectedModelVal.value = val;
+                selectedModelName.textContent = name;
+                
+                // Update active class
+                modelOptions.forEach(o => o.classList.remove("active"));
+                opt.classList.add("active");
+                
+                showToast(`Switched model to ${name}`, "🤖");
+            });
+        });
+    }
+
+    // Export Conversation transcript
+    const exportChatBtn = document.getElementById("export-chat-btn");
+    const downloadTxtFile = (text, filename) => {
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Transcript exported successfully!", "📥");
+    };
+
+    if (exportChatBtn) {
+        exportChatBtn.addEventListener("click", () => {
+            const chatMessagesDiv = document.getElementById("chat-messages");
+            const messageRows = chatMessagesDiv.querySelectorAll(".chat-message-row");
+            
+            if (messageRows.length === 0) {
+                showToast("No messages to export.", "⚠️");
+                return;
+            }
+
+            let text = "==================================================\n";
+            text += "   MBAssist AI Chatbot - Admissions Inquiry Logs\n";
+            text += `   Date: ${new Date().toLocaleString()}\n`;
+            text += "==================================================\n\n";
+
+            // If we have an active session from SQL, prepend details
+            if (activeSessionId) {
+                const currentSession = sessions.find(s => s.id === activeSessionId);
+                if (currentSession) {
+                    text += `Session Title: ${currentSession.title}\n`;
+                    text += `Session ID: ${activeSessionId}\n\n`;
+                }
+            }
+
+            messageRows.forEach(row => {
+                const isUser = row.classList.contains("user-row");
+                const sender = isUser ? "User" : "MBAssist AI";
+                const contentDiv = row.querySelector(".message-content");
+                if (contentDiv) {
+                    // Extract text (preserving spacing/formatting from DOM)
+                    const contentText = contentDiv.innerText.trim();
+                    text += `[${sender}]\n${contentText}\n\n`;
+                }
+            });
+
+            text += "==================================================\n";
+            text += "End of transcript. Thank you for using MBAssist AI!\n";
+            text += "==================================================\n";
+
+            const filename = `mbassist_transcript_${activeSessionId || 'guest'}.txt`;
+            downloadTxtFile(text, filename);
+        });
+    }
 
     checkAuth();
 });
