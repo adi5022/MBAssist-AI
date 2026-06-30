@@ -560,6 +560,12 @@ body {
     gap: 12px;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .menu-toggle-btn {
     background: transparent;
     border: none;
@@ -1652,7 +1658,7 @@ body {
 
 .dark-theme .model-dropdown-list {
     background: rgba(20, 20, 30, 0.95);
-    border-color: rgba(255,255,255,0.08);
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 .model-option {
@@ -1663,7 +1669,8 @@ body {
     transition: all 0.15s ease;
 }
 
-.model-option:hover, .model-option.active {
+.model-option:hover,
+.model-option.active {
     background: rgba(99, 102, 241, 0.08);
 }
 
