@@ -1,13 +1,32 @@
 import sqlite3
+import os
 from pathlib import Path
 from config import DATA_DIR
 
 DB_PATH = DATA_DIR / "chatbot.db"
 
+# Detect if Turso cloud database parameters are set in environment
+db_url = os.environ.get("TURSO_DB_URL")
+db_token = os.environ.get("TURSO_AUTH_TOKEN")
+
+if db_url and db_token:
+    try:
+        import libsql as sqlite3_driver
+        print("[DATABASE] Using Turso Cloud SQLite (libsql) database connection.")
+    except ImportError:
+        print("[DATABASE] libsql package not found. Falling back to local sqlite3.")
+        sqlite3_driver = sqlite3
+        db_url = None
+else:
+    sqlite3_driver = sqlite3
+
 def get_db_connection():
-    """Establish a connection to the SQLite database."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # Enables column access by name (e.g. row['username'])
+    """Establish a connection to the SQLite database (local or cloud)."""
+    if db_url and db_token:
+        conn = sqlite3_driver.connect(db_url, auth_token=db_token)
+    else:
+        conn = sqlite3_driver.connect(DB_PATH)
+    conn.row_factory = sqlite3_driver.Row  # Enables column access by name (e.g. row['username'])
     return conn
 
 def init_db():

@@ -10,3 +10,5 @@ requests
 python-dotenv
 markdown
 beautifulsoup4
+sentence-transformers
+libsql-experimental
