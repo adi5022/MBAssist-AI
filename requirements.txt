@@ -12,3 +12,4 @@ markdown
 beautifulsoup4
 sentence-transformers
 libsql-experimental
+gunicorn
