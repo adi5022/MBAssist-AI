@@ -601,6 +601,59 @@ def api_delete_session(session_id):
         print(f"[ERROR] Session deletion failed: {str(e)}", file=sys.stderr)
         return jsonify({"error": f"Failed to delete session: {str(e)}"}), 500
 
+import threading
+
+# Rebuild thread safety lock and status flag
+rebuild_lock = threading.Lock()
+is_rebuilding = False
+
+def run_background_rebuild():
+    global is_rebuilding
+    try:
+        from scraper import WebScraper
+        from knowledge import rebuild_unified_index
+        print("[BACKGROUND REBUILD] Starting unified index rebuild...")
+        scraper = WebScraper(start_url="https://mbcet.ac.in/", max_pages=150)
+        scraped_pages = scraper.start()
+        if scraped_pages:
+            rebuild_unified_index(scraped_pages)
+            print("[BACKGROUND REBUILD] FAISS index rebuilt successfully!")
+        else:
+            print("[BACKGROUND REBUILD] Scraper returned no pages. Index was not rebuilt.")
+    except Exception as e:
+        print(f"[BACKGROUND REBUILD ERROR] Index rebuild failed: {e}", file=sys.stderr)
+    finally:
+        global is_rebuilding
+        is_rebuilding = False
+
+def run_weekly_scheduler():
+    # Run every 7 days (604800 seconds)
+    while True:
+        time.sleep(604800)
+        global is_rebuilding
+        with rebuild_lock:
+            if is_rebuilding:
+                print("[SCHEDULER] Rebuild already in progress. Skipping scheduled run.")
+                continue
+            is_rebuilding = True
+        print("[SCHEDULER] Starting automatic weekly rebuild of FAISS index...")
+        threading.Thread(target=run_background_rebuild, daemon=True).start()
+
+# Start scheduler thread as a daemon
+threading.Thread(target=run_weekly_scheduler, daemon=True).start()
+
+@app.route("/api/admin/rebuild-index", methods=["POST"])
+def api_rebuild_index():
+    """Trigger manual index rebuild in a background thread to prevent API timeout."""
+    global is_rebuilding
+    with rebuild_lock:
+        if is_rebuilding:
+            return jsonify({"error": "An index rebuild is already in progress."}), 429
+        is_rebuilding = True
+    
+    threading.Thread(target=run_background_rebuild, daemon=True).start()
+    return jsonify({"success": "Web scraper and index rebuild started in the background."})
+
 def check_files():
     """Verify at startup that data or cache dependencies are in place."""
     print("*" * 60)

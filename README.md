@@ -26,6 +26,11 @@ To prevent prompt context window bloat and manage API tokens efficiently:
 * Uses a **Radial Choice Wheel** (fanning EN, MIX, ML buttons in an arc) for language selection.
 * Dynamically routes STT calls to **Sarvam AI** for Malayalam transcripts and falls back to **Groq Whisper** if credentials are dry or if English is selected.
 
+### 5. Automated Web Re-indexing & Admin Endpoint
+* **Background Scheduler**: A daemon thread runs a weekly re-crawl of the college domain (`mbcet.ac.in`) automatically to keep the index fresh.
+* **On-Demand Trigger**: Provides a POST API endpoint `/api/admin/rebuild-index` that manually triggers the crawler and index rebuild in a background thread to prevent API requests from timing out.
+* **Thread-Safe Locks**: Utilizes synchronization locks to ensure only one rebuild process runs at a time.
+
 ---
 
 ## 🛠️ Tech Stack
